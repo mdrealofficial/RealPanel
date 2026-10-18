@@ -109,25 +109,25 @@ func PhpInstallHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[INFO] Installing PHP %s packages via apt-get...", v)
 
+	// Core packages guaranteed to exist for any supported PHP version
 	pkgs := []string{
 		fmt.Sprintf("php%s-fpm", v),
 		fmt.Sprintf("php%s-cli", v),
 		fmt.Sprintf("php%s-common", v),
-		fmt.Sprintf("php%s-mysql", v),
-		fmt.Sprintf("php%s-pgsql", v),
-		fmt.Sprintf("php%s-sqlite3", v),
-		fmt.Sprintf("php%s-xml", v),
-		fmt.Sprintf("php%s-curl", v),
-		fmt.Sprintf("php%s-mbstring", v),
-		fmt.Sprintf("php%s-zip", v),
-		fmt.Sprintf("php%s-gd", v),
-		fmt.Sprintf("php%s-bcmath", v),
-		fmt.Sprintf("php%s-intl", v),
-		fmt.Sprintf("php%s-readline", v),
-		fmt.Sprintf("php%s-soap", v),
-		fmt.Sprintf("php%s-opcache", v),
-		fmt.Sprintf("php%s-imagick", v),
-		fmt.Sprintf("php%s-redis", v),
+	}
+
+	// Extensions to install if available in repository
+	candidateExts := []string{
+		"mysql", "pgsql", "sqlite3", "xml", "curl", "mbstring", "zip",
+		"gd", "bcmath", "intl", "readline", "soap", "imagick", "redis", "opcache",
+	}
+
+	for _, ext := range candidateExts {
+		pkg := fmt.Sprintf("php%s-%s", v, ext)
+		// Only include package if it exists in the distribution repository
+		if _, err := system.ExecCommand("apt-cache", "show", pkg); err == nil {
+			pkgs = append(pkgs, pkg)
+		}
 	}
 
 	aptArgs := append([]string{"install", "-y"}, pkgs...)
