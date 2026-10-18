@@ -49,9 +49,17 @@ class NodeController extends Controller
 
         // Get Node.js version info from first available server
         $nodeInfo = ['node' => null, 'npm' => null, 'pm2' => null];
+        $targetServer = null;
         if ($apps->isNotEmpty()) {
-            $firstServer = $apps->first()->account->server;
-            $versionResponse = AgentService::for($firstServer)->post('/node/version', []);
+            $targetServer = $apps->first()->account->server;
+        } elseif ($domains->isNotEmpty()) {
+            $targetServer = $domains->first()->account->server;
+        } else {
+            $targetServer = \App\Models\Server::first();
+        }
+
+        if ($targetServer) {
+            $versionResponse = AgentService::for($targetServer)->post('/node/version', []);
             if ($versionResponse && $versionResponse->successful()) {
                 $nodeInfo = $versionResponse->json();
             }

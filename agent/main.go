@@ -92,6 +92,15 @@ func main() {
 	mux.HandleFunc("/php/extensions", handlers.PhpExtensionToggleHandler)
 	mux.HandleFunc("/php/config", handlers.PhpConfigHandler)
 
+	// Node.js & PM2 Management
+	mux.HandleFunc("/node/version", handlers.NodeVersionHandler)
+	mux.HandleFunc("/node/list", handlers.NodeListHandler)
+	mux.HandleFunc("/node/app-start", handlers.NodeAppStartHandler)
+	mux.HandleFunc("/node/app-restart", handlers.NodeAppRestartHandler)
+	mux.HandleFunc("/node/app-stop", handlers.NodeAppStopHandler)
+	mux.HandleFunc("/node/app-delete", handlers.NodeAppDeleteHandler)
+	mux.HandleFunc("/node/app-logs", handlers.NodeAppLogsHandler)
+
 	// Default fallback handler for any remaining endpoints
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[INFO] Agent received request: %s %s", r.Method, r.URL.Path)
