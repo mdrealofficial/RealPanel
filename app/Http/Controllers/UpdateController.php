@@ -13,24 +13,28 @@ class UpdateController extends Controller
     {
         $currentVersion = config('opterius.version', '1.0.0');
 
-        // Check for latest version. Authoritative source is
-        // get.opterius.com/agent/version.txt — it's bumped by every release.sh
-        // run, so it always matches what's actually deployed. The old license
-        // server API at /api/version/latest is kept as a fallback only.
+        // Check for latest version from GitHub repository
         $latestVersion = null;
+        $updateUrl = config('opterius.update_version_url', 'https://raw.githubusercontent.com/mdrealofficial/RealPanel/main/version.txt');
+        $repo = config('opterius.github_repo', 'mdrealofficial/RealPanel');
+
         try {
-            $response = Http::timeout(5)->get('https://get.opterius.com/agent/version.txt');
+            $response = Http::timeout(5)->get($updateUrl);
             if ($response->successful()) {
                 $latestVersion = trim($response->body());
             }
         } catch (\Exception $e) {
-            // get.opterius.com unreachable — try the license server.
+            // Raw file fetch failed — fallback to GitHub Releases API
         }
+
         if (! $latestVersion) {
             try {
-                $response = Http::timeout(5)->get(config('opterius.license_server_url') . '/api/version/latest');
+                $response = Http::timeout(5)
+                    ->withHeaders(['User-Agent' => 'RealPanel-UpdateCheck'])
+                    ->get("https://api.github.com/repos/{$repo}/releases/latest");
                 if ($response->successful()) {
-                    $latestVersion = $response->json('version');
+                    $tag = $response->json('tag_name');
+                    $latestVersion = ltrim($tag, 'v');
                 }
             } catch (\Exception $e) {}
         }

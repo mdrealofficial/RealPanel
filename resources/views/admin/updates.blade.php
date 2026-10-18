@@ -31,7 +31,7 @@
                         @endif
                     </div>
                     <div>
-                        <div class="text-lg font-bold text-gray-900">Opterius v{{ $currentVersion }}</div>
+                        <div class="text-lg font-bold text-gray-900">RealPanel v{{ $currentVersion }}</div>
                         <div class="text-sm text-gray-500">
                             @if($updateAvailable)
                                 <span class="text-amber-600 font-medium">Version {{ $latestVersion }} is available</span>
@@ -57,7 +57,7 @@
                                 <template x-if="updating">
                                     <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                                 </template>
-                                <span x-text="updating ? 'Updating...' : 'Update Opterius'">Update Opterius</span>
+                                <span x-text="updating ? 'Updating...' : 'Update RealPanel'">Update RealPanel</span>
                             </button>
                         </form>
                     @else

@@ -88,6 +88,8 @@ return [
     'sso_secret' => env('OPTERIUS_SSO_SECRET'),
 
     'version' => '2.9.17',
+    'github_repo' => env('REALPANEL_GITHUB_REPO', 'mdrealofficial/RealPanel'),
+    'update_version_url' => env('REALPANEL_UPDATE_URL', 'https://raw.githubusercontent.com/mdrealofficial/RealPanel/main/version.txt'),
     'license_key' => env('OPTERIUS_LICENSE_KEY', ''),
     'license_server_url' => env('OPTERIUS_LICENSE_URL', 'https://opterius.com'),
 
