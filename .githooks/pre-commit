@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Git pre-commit hook for RealPanel
+# Automatically bumps version in version.txt on every commit (if not already modified in the commit)
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+VERSION_FILE="$REPO_ROOT/version.txt"
+BUMP_SCRIPT="$REPO_ROOT/scripts/bump-version.sh"
+
+# If version.txt is already staged in this commit, keep that version
+if git diff --cached --name-only | grep -q "^version\.txt$"; then
+    exit 0
+fi
+
+if [ -f "$BUMP_SCRIPT" ]; then
+    "$BUMP_SCRIPT" patch
+    git add "$VERSION_FILE"
+    echo "Auto-bumped version to $(cat "$VERSION_FILE") for this commit."
+fi
+
+exit 0
