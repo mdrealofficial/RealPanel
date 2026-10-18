@@ -22,15 +22,7 @@ class ProvisioningService
      */
     public function createAccount(array $params): array
     {
-        // License check applies to every code path that creates accounts.
-        // No exemption — even WHMCS-driven provisioning must fit the license.
-        $license = new LicenseService();
-        $maxAccounts = $license->maxAccounts();
-        $currentAccounts = Account::count();
-
-        if ($currentAccounts >= $maxAccounts) {
-            return ['success' => false, 'account' => null, 'error' => "Account limit reached ({$currentAccounts}/{$maxAccounts})."];
-        }
+        // Open-source edition: account creation is unrestricted
 
         // Check uniqueness
         if (Account::where('username', $params['username'])->exists()) {

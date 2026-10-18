@@ -26,23 +26,15 @@ class AccountController extends Controller
 
         $accounts = $query->latest()->get();
 
-        $license = new \App\Services\LicenseService();
-        $maxAccounts = $license->maxAccounts();
+        $maxAccounts = PHP_INT_MAX;
         $currentAccounts = Account::count();
-        $atLimit = $currentAccounts >= $maxAccounts && $maxAccounts !== PHP_INT_MAX;
+        $atLimit = false;
 
         return view('accounts.index', compact('accounts', 'maxAccounts', 'currentAccounts', 'atLimit'));
     }
 
     public function create()
     {
-        // Block account creation if no license key is configured
-        $licenseKey = config('opterius.license_key') ?: env('OPTERIUS_LICENSE_KEY', '');
-        if (empty($licenseKey)) {
-            return redirect()->route('admin.license.index')
-                ->with('error', 'Please activate a license key before creating hosting accounts.');
-        }
-
         $servers = Server::all();
         $packages = Package::orderByDesc('is_default')->orderBy('name')->get();
         $defaultPackage = $packages->firstWhere('is_default', true);
@@ -52,16 +44,6 @@ class AccountController extends Controller
 
     public function store(Request $request)
     {
-        // License account limit applies to everyone — including the panel
-        // owner. The "admin" role is the panel owner themselves; if they
-        // were exempt, the license would be unenforceable.
-        $license = new \App\Services\LicenseService();
-        $maxAccounts = $license->maxAccounts();
-        $currentAccounts = Account::count();
-
-        if ($currentAccounts >= $maxAccounts) {
-            return back()->with('error', __('accounts.account_limit_reached', ['current' => $currentAccounts, 'max' => $maxAccounts]))->withInput();
-        }
 
         // Check reseller ACL and account limit
         if (auth()->user()->isReseller()) {
