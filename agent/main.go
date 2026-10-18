@@ -83,9 +83,13 @@ func main() {
 	mux.HandleFunc("/cron/create", handlers.CronCreateHandler)
 	mux.HandleFunc("/cron/delete", handlers.CronDeleteHandler)
 
-	// 10. PHP Versions
+	// 10. PHP Versions & Management
 	mux.HandleFunc("/php/list-versions", handlers.PhpListVersionsHandler)
+	mux.HandleFunc("/php/install", handlers.PhpInstallHandler)
 	mux.HandleFunc("/php/switch-version", handlers.PhpSwitchVersionHandler)
+	mux.HandleFunc("/php/list-extensions", handlers.PhpListExtensionsHandler)
+	mux.HandleFunc("/php/extensions", handlers.PhpExtensionToggleHandler)
+	mux.HandleFunc("/php/config", handlers.PhpConfigHandler)
 
 	// Default fallback handler for any remaining endpoints
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -22,7 +22,14 @@ func RespondJSON(w http.ResponseWriter, status int, data interface{}) {
 }
 
 func ExecCommand(name string, args ...string) (string, error) {
+	return ExecCommandWithEnv(nil, name, args...)
+}
+
+func ExecCommandWithEnv(env []string, name string, args ...string) (string, error) {
 	cmd := exec.Command(name, args...)
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
