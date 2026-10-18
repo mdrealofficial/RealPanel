@@ -176,7 +176,7 @@
         </button>
         <div x-show="open" x-collapse class="mt-3 bg-gray-50 border border-gray-200 rounded-lg p-4">
             <p class="text-xs text-gray-500 mb-3">
-                These actions are for troubleshooting only. The main <strong>Update Opterius</strong> button above already updates both the panel and the agent together.
+                These actions are for troubleshooting only. The main <strong>Update RealPanel</strong> button above already updates both the panel and the agent together.
             </p>
             <form action="{{ route('admin.updates.agent') }}" method="POST"
                   x-data="{ busy: false }" @submit="busy = true">

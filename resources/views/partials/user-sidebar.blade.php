@@ -21,7 +21,7 @@
                 <a href="{{ route('admin.dashboard') }}" class="flex-1 text-center py-1.5 text-xs font-medium text-gray-400 hover:text-white transition rounded-md">
                     {{ __('common.server_mode') }}
                 </a>
-                <span class="flex-1 text-center py-1.5 text-xs font-semibold rounded-md bg-indigo-600 text-white">
+                <span class="flex-1 text-center py-1.5 text-xs font-semibold rounded-md text-white" style="background-color: #ff6900;">
                     {{ __('common.hosting_mode') }}
                 </span>
             </div>
