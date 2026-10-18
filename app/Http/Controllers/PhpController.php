@@ -52,6 +52,9 @@ class PhpController extends Controller
         // Get extensions for the selected PHP version
         $extensions = [];
         $selectedVersion = $request->get('php_version', '');
+        if ($selectedServer && empty($selectedVersion) && !empty($versions)) {
+            $selectedVersion = collect($versions)->where('installed', true)->pluck('version')->first() ?? '';
+        }
         if ($selectedServer && $selectedVersion) {
             $response = AgentService::for($selectedServer)->post('/php/list-extensions', [
                 'version' => $selectedVersion,
@@ -61,8 +64,9 @@ class PhpController extends Controller
             }
         }
 
+        $toggleableFuncs = ['proc_open', 'popen', 'exec', 'shell_exec', 'system', 'passthru'];
         $allDomains = $allDomains ?? collect();
-        return view('php.index', compact('servers', 'selectedServer', 'versions', 'domains', 'allDomains', 'extensions', 'selectedVersion'));
+        return view('php.index', compact('servers', 'selectedServer', 'versions', 'domains', 'allDomains', 'extensions', 'selectedVersion', 'toggleableFuncs'));
     }
 
     public function toggleExtension(Request $request)
@@ -92,6 +96,31 @@ class PhpController extends Controller
         $error = $response ? $response->json('error', 'Unknown error') : 'Could not connect to server agent';
         $failKey = $validated['enable'] ? 'php.failed_to_enable_extension' : 'php.failed_to_disable_extension';
         return back()->with('error', __($failKey, ['error' => $error]));
+    }
+
+    public function installExtension(Request $request)
+    {
+        $validated = $request->validate([
+            'server_id' => 'required|exists:servers,id',
+            'version'   => 'required|string|regex:/^\d+\.\d+$/',
+            'extension' => 'required|string|max:50',
+        ]);
+
+        $server = Server::findOrFail($validated['server_id']);
+
+        $response = AgentService::for($server)->post('/php/install-extension', [
+            'version'   => $validated['version'],
+            'extension' => $validated['extension'],
+        ]);
+
+        if ($response && $response->successful()) {
+            return redirect()
+                ->route('admin.php.index', ['server_id' => $server->id, 'php_version' => $validated['version']])
+                ->with('success', "Module '{$validated['extension']}' installed successfully for PHP {$validated['version']}.");
+        }
+
+        $error = $response ? $response->json('error', 'Unknown error') : 'Could not connect to server agent';
+        return back()->with('error', "Failed to install module: {$error}");
     }
 
     public function install(Request $request)
@@ -157,15 +186,25 @@ class PhpController extends Controller
             'post_max_size'        => 'nullable|string|max:10',
             'max_execution_time'   => 'nullable|integer|min:0|max:3600',
             'display_errors'       => 'nullable|in:On,Off',
+            'allow_url_fopen'      => 'nullable|in:On,Off',
+            'enabled_funcs'        => 'nullable|array',
+            'enabled_funcs.*'      => 'string',
         ]);
 
         $domain = Domain::with('account.server')->findOrFail($validated['domain_id']);
 
         $values = [];
-        foreach (['memory_limit', 'upload_max_filesize', 'post_max_size', 'max_execution_time', 'display_errors'] as $key) {
+        foreach (['memory_limit', 'upload_max_filesize', 'post_max_size', 'max_execution_time', 'display_errors', 'allow_url_fopen'] as $key) {
             if (!empty($validated[$key])) {
                 $values[$key] = (string) $validated[$key];
             }
+        }
+
+        if ($request->has('dangerous_submitted')) {
+            $dangerousList = ['proc_open', 'popen', 'exec', 'shell_exec', 'system', 'passthru'];
+            $enabled = $validated['enabled_funcs'] ?? [];
+            $disabled = array_values(array_diff($dangerousList, $enabled));
+            $values['disable_functions'] = implode(',', $disabled);
         }
 
         if (empty($values)) {

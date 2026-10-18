@@ -125,41 +125,89 @@
         @endphp
         @if(!empty($installedVersionsList))
             <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-                <div class="px-6 py-5 border-b border-gray-100">
-                    <h3 class="text-base font-semibold text-gray-800">{{ __('php.php_extensions') }}</h3>
-                    <p class="text-sm text-gray-500 mt-1">{{ __('php.php_extensions_hint') }}</p>
+                <div class="px-6 py-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-800">{{ __('php.php_extensions') }}</h3>
+                        <p class="text-sm text-gray-500 mt-1">{{ __('php.php_extensions_hint') }}</p>
+                    </div>
+
+                    {{-- Install Individual Module Form --}}
+                    @if(!empty($selectedVersion))
+                        <form method="POST" action="{{ route('admin.php.install-extension') }}" class="flex items-center gap-2">
+                            @csrf
+                            <input type="hidden" name="server_id" value="{{ $selectedServer->id }}">
+                            <input type="hidden" name="version" value="{{ $selectedVersion }}">
+                            <div class="relative">
+                                <input type="text" name="extension" placeholder="e.g. swoole, mongodb, yaml, xdebug" required
+                                       list="popular-extensions"
+                                       class="rounded-lg border-gray-300 text-xs py-2 px-3 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 w-56">
+                                <datalist id="popular-extensions">
+                                    <option value="swoole">
+                                    <option value="mongodb">
+                                    <option value="yaml">
+                                    <option value="xdebug">
+                                    <option value="memcached">
+                                    <option value="ldap">
+                                    <option value="grpc">
+                                    <option value="imap">
+                                    <option value="bz2">
+                                    <option value="tidy">
+                                    <option value="lz4">
+                                    <option value="zstd">
+                                    <option value="snmp">
+                                    <option value="pspell">
+                                </datalist>
+                            </div>
+                            <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                Install Module
+                            </button>
+                        </form>
+                    @endif
                 </div>
-                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between flex-wrap gap-3">
                     <div class="flex flex-wrap gap-2">
                         @foreach($installedVersionsList as $ver)
                             <a href="{{ route('admin.php.index', ['server_id' => $selectedServer->id, 'php_version' => $ver]) }}"
-                               class="px-4 py-1.5 text-sm font-medium rounded-lg transition
-                                @if(($selectedVersion ?? '') === $ver) bg-indigo-600 text-white
-                                @else bg-white border border-gray-200 text-gray-700 hover:bg-gray-50
+                               class="px-4 py-1.5 text-sm font-semibold rounded-lg transition flex items-center gap-2
+                                @if(($selectedVersion ?? '') === $ver) bg-indigo-600 text-white shadow-sm
+                                @else bg-white border border-gray-200 text-gray-700 hover:bg-gray-100
                                 @endif">
-                                PHP {{ $ver }}
+                                <span>PHP {{ $ver }}</span>
+                                @if(($selectedVersion ?? '') === $ver)
+                                    <span class="w-2 h-2 rounded-full bg-white"></span>
+                                @endif
                             </a>
                         @endforeach
                     </div>
+                    @if(!empty($selectedVersion))
+                        <span class="text-xs text-gray-500 font-medium">
+                            Viewing modules for <strong>PHP {{ $selectedVersion }}</strong> ({{ count($extensions) }} available)
+                        </span>
+                    @endif
                 </div>
 
                 @if(!empty($extensions))
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-6">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-6 max-h-[500px] overflow-y-auto" style="scrollbar-width: thin;">
                         @foreach($extensions as $ext)
-                            <div class="flex items-center justify-between border rounded-lg px-3 py-2
-                                @if($ext['installed']) border-green-200 bg-green-50 @else border-gray-200 bg-gray-50 @endif">
-                                <span class="text-sm font-medium @if($ext['installed']) text-green-800 @else text-gray-500 @endif">
-                                    {{ $ext['name'] }}
-                                </span>
-                                <form action="{{ route('admin.php.extension') }}" method="POST">
+                            <div class="flex items-center justify-between border rounded-xl px-3 py-2.5 transition
+                                @if($ext['installed']) border-emerald-200 bg-emerald-50/50 @else border-gray-200 bg-gray-50/50 @endif">
+                                <div class="flex items-center space-x-2 min-w-0">
+                                    <span class="w-2 h-2 rounded-full shrink-0 {{ $ext['installed'] ? 'bg-emerald-500' : 'bg-gray-300' }}"></span>
+                                    <span class="text-xs font-semibold truncate @if($ext['installed']) text-gray-900 @else text-gray-500 @endif">
+                                        {{ $ext['name'] }}
+                                    </span>
+                                </div>
+                                <form action="{{ route('admin.php.extension') }}" method="POST" class="shrink-0">
                                     @csrf
                                     <input type="hidden" name="server_id" value="{{ $selectedServer->id }}">
                                     <input type="hidden" name="version" value="{{ $selectedVersion }}">
                                     <input type="hidden" name="extension" value="{{ $ext['name'] }}">
                                     <input type="hidden" name="enable" value="{{ $ext['installed'] ? '0' : '1' }}">
-                                    <button type="submit" class="text-xs font-medium px-2 py-1 rounded transition
-                                        @if($ext['installed']) text-red-600 hover:bg-red-100
-                                        @else text-green-600 hover:bg-green-100
+                                    <button type="submit" class="text-[11px] font-semibold px-2.5 py-1 rounded-md transition shadow-xs
+                                        @if($ext['installed']) text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200
+                                        @else text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200
                                         @endif">
                                         {{ $ext['installed'] ? __('common.disable') : __('common.enable') }}
                                     </button>
@@ -212,15 +260,8 @@
                                         {{ __('php.switch_version') }}
                                     </button>
                                 </form>
-
-                                <button @click="showConfig = !showConfig" class="text-gray-400 hover:text-gray-600 transition" title="{{ __('php.php_configuration') }}">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
-                                </button>
                             </div>
                         </div>
-
-                        {{-- Expandable PHP Config --}}
-                        <div x-data="{ showConfig: false }" x-show="false" class="hidden">{{-- placeholder for Alpine scope --}}</div>
                     @endforeach
                 </div>
                 @if(method_exists($domains, 'hasPages') && $domains->hasPages())
@@ -230,14 +271,20 @@
                 @endif
             </div>
 
-            <!-- PHP Config per Domain -->
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden" x-data="{ selectedDomain: '' }">
+            <!-- PHP Config & Security per Domain -->
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden" x-data="{
+                funcs: ['proc_open', 'popen', 'exec', 'shell_exec', 'system', 'passthru'],
+                selectedFuncs: [],
+                blockAll() { this.selectedFuncs = []; },
+                allowAll() { this.selectedFuncs = [...this.funcs]; }
+            }">
                 <div class="px-6 py-5 border-b border-gray-100">
-                    <h3 class="text-base font-semibold text-gray-800">{{ __('php.php_configuration') }}</h3>
-                    <p class="text-sm text-gray-500 mt-1">{{ __('php.php_configuration_hint') }}</p>
+                    <h3 class="text-base font-semibold text-gray-800">PHP Configuration & Security Overrides</h3>
+                    <p class="text-sm text-gray-500 mt-1">Configure runtime limits, error reporting, and toggle dangerous shell functions per domain.</p>
                 </div>
-                <form action="{{ route('admin.php.config') }}" method="POST" class="px-6 py-5 space-y-5">
+                <form action="{{ route('admin.php.config') }}" method="POST" class="px-6 py-5 space-y-6">
                     @csrf
+                    <input type="hidden" name="dangerous_submitted" value="1">
                     <div>
                         <label for="config_domain_id" class="block text-sm font-medium text-gray-700 mb-1.5">{{ __('php.domain') }}</label>
                         <select name="domain_id" id="config_domain_id"
@@ -247,6 +294,7 @@
                             @endforeach
                         </select>
                     </div>
+
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ __('php.memory_limit') }}</label>
@@ -276,10 +324,54 @@
                                 <option value="On">{{ __('php.on_development') }}</option>
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">allow_url_fopen</label>
+                            <select name="allow_url_fopen"
+                                class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="On">On (Enabled)</option>
+                                <option value="Off">Off (Disabled)</option>
+                            </select>
+                        </div>
                     </div>
-                    <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
-                        {{ __('php.save_configuration') }}
-                    </button>
+
+                    {{-- Dangerous Functions (disable_functions) Security Box --}}
+                    <div class="p-4 rounded-xl border border-amber-200 bg-amber-50/50 space-y-3">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                                    Dangerous Functions Control
+                                </h4>
+                                <p class="text-xs text-gray-600 mt-0.5">
+                                    Checked functions are <strong>allowed</strong>. Unchecked functions are blocked via <code class="bg-amber-100 px-1 py-0.5 rounded text-amber-900 font-mono text-[11px]">disable_functions</code>.
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button type="button" @click="blockAll()" class="text-xs px-2.5 py-1 rounded bg-rose-100 hover:bg-rose-200 text-rose-800 font-semibold transition">
+                                    Block All (Secure)
+                                </button>
+                                <button type="button" @click="allowAll()" class="text-xs px-2.5 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition">
+                                    Allow All
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-1">
+                            @foreach($toggleableFuncs as $fn)
+                                <label class="flex items-center gap-2 p-2 rounded-lg bg-white border border-amber-100 text-xs font-mono cursor-pointer hover:border-amber-300 transition">
+                                    <input type="checkbox" name="enabled_funcs[]" value="{{ $fn }}" x-model="selectedFuncs"
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-gray-800 font-medium">{{ $fn }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 shadow-sm transition">
+                            {{ __('php.save_configuration') }}
+                        </button>
+                    </div>
                 </form>
             </div>
         @endif

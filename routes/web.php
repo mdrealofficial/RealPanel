@@ -160,6 +160,7 @@ Route::middleware([
         Route::post('/php/switch', [PhpController::class, 'switchVersion'])->name('php.switch');
         Route::post('/php/config', [PhpController::class, 'config'])->name('php.config');
         Route::post('/php/extension', [PhpController::class, 'toggleExtension'])->name('php.extension');
+        Route::post('/php/install-extension', [PhpController::class, 'installExtension'])->name('php.install-extension');
 
         // Email Settings (global)
         Route::get('/email-settings', [EmailSettingsController::class, 'index'])->name('email-settings.index');

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"opterius-agent-oss/system"
@@ -222,29 +223,118 @@ func PhpListExtensionsHandler(w http.ResponseWriter, r *http.Request) {
 		v = "8.4"
 	}
 
-	standardExts := []string{
-		"bcmath", "curl", "gd", "igbinary", "imagick", "intl", "mbstring",
-		"mysql", "opcache", "pgsql", "readline", "redis", "soap", "sqlite3", "xml", "zip",
-	}
-
+	modsDir := fmt.Sprintf("/etc/php/%s/mods-available", v)
 	confDir := fmt.Sprintf("/etc/php/%s/fpm/conf.d", v)
-	var extensions []map[string]interface{}
 
-	for _, ext := range standardExts {
-		installed := false
-		matches, err := filepath.Glob(filepath.Join(confDir, fmt.Sprintf("*%s.ini", ext)))
-		if err == nil && len(matches) > 0 {
-			installed = true
+	var extensions []map[string]interface{}
+	seen := make(map[string]bool)
+
+	// 1. Scan actual available modules in /etc/php/{v}/mods-available/
+	if files, err := os.ReadDir(modsDir); err == nil {
+		for _, f := range files {
+			if f.IsDir() || !strings.HasSuffix(f.Name(), ".ini") {
+				continue
+			}
+			extName := strings.TrimSuffix(f.Name(), ".ini")
+			if seen[extName] {
+				continue
+			}
+			seen[extName] = true
+
+			// Check if symlinked / enabled in FPM conf.d
+			enabled := false
+			matches, _ := filepath.Glob(filepath.Join(confDir, fmt.Sprintf("*%s.ini", extName)))
+			if len(matches) > 0 {
+				enabled = true
+			}
+
+			extensions = append(extensions, map[string]interface{}{
+				"name":      extName,
+				"installed": enabled,
+			})
 		}
-		extensions = append(extensions, map[string]interface{}{
-			"name":      ext,
-			"installed": installed,
-		})
 	}
+
+	// 2. Fallback to standard core list if directory was empty
+	if len(extensions) == 0 {
+		standardExts := []string{
+			"bcmath", "curl", "gd", "igbinary", "imagick", "intl", "mbstring",
+			"mysql", "opcache", "pgsql", "readline", "redis", "soap", "sqlite3", "xml", "zip",
+		}
+		for _, ext := range standardExts {
+			enabled := false
+			matches, _ := filepath.Glob(filepath.Join(confDir, fmt.Sprintf("*%s.ini", ext)))
+			if len(matches) > 0 {
+				enabled = true
+			}
+			extensions = append(extensions, map[string]interface{}{
+				"name":      ext,
+				"installed": enabled,
+			})
+		}
+	}
+
+	sort.Slice(extensions, func(i, j int) bool {
+		return extensions[i]["name"].(string) < extensions[j]["name"].(string)
+	})
 
 	system.RespondJSON(w, http.StatusOK, map[string]interface{}{
 		"status":     "ok",
 		"extensions": extensions,
+	})
+}
+
+type PhpInstallExtReq struct {
+	Version   string `json:"version"`
+	Extension string `json:"extension"`
+}
+
+func PhpInstallExtensionHandler(w http.ResponseWriter, r *http.Request) {
+	var req PhpInstallExtReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		system.RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"status": "error",
+			"error":  "Invalid request body",
+		})
+		return
+	}
+
+	v := strings.TrimSpace(req.Version)
+	ext := strings.ToLower(strings.TrimSpace(req.Extension))
+	if v == "" || ext == "" {
+		system.RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"status": "error",
+			"error":  "Version and extension name are required",
+		})
+		return
+	}
+
+	// Strip "php8.3-" or "php-" prefix if user typed it
+	ext = strings.TrimPrefix(ext, fmt.Sprintf("php%s-", v))
+	ext = strings.TrimPrefix(ext, "php-")
+
+	pkg := fmt.Sprintf("php%s-%s", v, ext)
+	log.Printf("[INFO] Installing extension package %s via apt-get...", pkg)
+
+	env := []string{"DEBIAN_FRONTEND=noninteractive"}
+	out, err := system.ExecCommandWithEnv(env, "apt-get", "install", "-y", pkg)
+	if err != nil {
+		log.Printf("[ERROR] apt-get install failed for %s: %v. Output: %s", pkg, err, out)
+		system.RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"status": "error",
+			"error":  fmt.Sprintf("Failed to install package %s: %v. Make sure the package exists in the repository.", pkg, err),
+		})
+		return
+	}
+
+	// Reload PHP-FPM service
+	system.ExecCommand("systemctl", "reload", fmt.Sprintf("php%s-fpm", v))
+
+	log.Printf("[OK] Extension %s installed successfully for PHP %s", ext, v)
+
+	system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"status":  "ok",
+		"message": fmt.Sprintf("Extension %s installed successfully for PHP %s", ext, v),
 	})
 }
 

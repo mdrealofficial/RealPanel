@@ -88,6 +88,7 @@ func main() {
 	mux.HandleFunc("/php/install", handlers.PhpInstallHandler)
 	mux.HandleFunc("/php/switch-version", handlers.PhpSwitchVersionHandler)
 	mux.HandleFunc("/php/list-extensions", handlers.PhpListExtensionsHandler)
+	mux.HandleFunc("/php/install-extension", handlers.PhpInstallExtensionHandler)
 	mux.HandleFunc("/php/extensions", handlers.PhpExtensionToggleHandler)
 	mux.HandleFunc("/php/config", handlers.PhpConfigHandler)
 
