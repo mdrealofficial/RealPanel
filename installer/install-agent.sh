@@ -77,10 +77,23 @@ DOWNLOAD_URL="https://github.com/opterius/agent/releases/latest/download/opteriu
 # ============================================================
 # Install
 # ============================================================
-info "Downloading Opterius Agent..."
-curl -sL -o "$AGENT_BIN" "$DOWNLOAD_URL"
+info "Compiling and installing RealPanel Agent..."
+if ! command -v go &>/dev/null; then
+    info "Installing Golang..."
+    if [[ "$OS_ID" =~ ^(ubuntu|debian)$ ]]; then
+        apt-get update -qq && apt-get install -y -qq golang-go
+    else
+        dnf install -y -q golang
+    fi
+fi
+
+TMP_DIR=$(mktemp -d)
+git clone --depth 1 https://github.com/mdrealofficial/RealPanel.git "$TMP_DIR"
+cd "$TMP_DIR/agent"
+go build -o "$AGENT_BIN" .
 chmod +x "$AGENT_BIN"
-ok "Agent binary installed to $AGENT_BIN"
+rm -rf "$TMP_DIR"
+ok "RealPanel Agent compiled and installed to $AGENT_BIN"
 
 # Verify
 AGENT_VERSION=$("$AGENT_BIN" --version 2>&1 || echo "unknown")
