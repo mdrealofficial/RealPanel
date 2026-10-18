@@ -18,33 +18,28 @@ class SystemSettingsController extends Controller
      * as "Coming soon" so the page already feels complete.
      */
     private array $categories = [
-        'display'       => ['icon' => 'm9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'ready' => false],
+        'display'       => ['icon' => 'm9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z', 'ready' => true],
         'domains'       => ['icon' => 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064', 'ready' => true],
-        'mail'          => ['icon' => 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', 'ready' => false],
-        'security'      => ['icon' => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', 'ready' => false],
-        'ssl'           => ['icon' => 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', 'ready' => false],
-        'php'           => ['icon' => 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4', 'ready' => false],
-        'notifications' => ['icon' => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', 'ready' => false],
+        'mail'          => ['icon' => 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', 'ready' => true],
+        'security'      => ['icon' => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', 'ready' => true],
+        'ssl'           => ['icon' => 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', 'ready' => true],
+        'php'           => ['icon' => 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4', 'ready' => true],
+        'notifications' => ['icon' => 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', 'ready' => true],
         'integrations'  => ['icon' => 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1', 'ready' => true],
-        'system'        => ['icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z', 'ready' => false],
+        'system'        => ['icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z', 'ready' => true],
     ];
 
     /**
-     * Show the System Settings page for the requested category. Defaults to
-     * 'domains' (the only populated one right now).
+     * Show the System Settings page for the requested category. Defaults to 'display'.
      */
-    public function index(string $category = 'domains')
+    public function index(string $category = 'display')
     {
         if (!array_key_exists($category, $this->categories)) {
             abort(404);
         }
 
-        // Pull every setting in the category at once. Subviews can read what
-        // they need from this map.
         $settings = Setting::getGroup('system_' . $category);
 
-        // Pre-compute the data each category-specific subview needs. Keep
-        // this controller-side rather than in Blade so subviews stay clean.
         $extra = [];
         if ($category === 'domains') {
             $extra['php_versions'] = config('opterius.php_versions', ['8.1', '8.2', '8.3', '8.4']);
@@ -61,9 +56,7 @@ class SystemSettingsController extends Controller
     }
 
     /**
-     * Save the settings for a category. Each category has its own validation
-     * + key list to keep the form schema scoped — Domains can't accidentally
-     * overwrite a Security setting, etc.
+     * Save the settings for a category.
      */
     public function update(Request $request, string $category)
     {
@@ -72,11 +65,89 @@ class SystemSettingsController extends Controller
         }
 
         switch ($category) {
+            case 'display':
+                $validated = $request->validate([
+                    'panel_name'    => 'required|string|max:100',
+                    'company_name'  => 'nullable|string|max:100',
+                    'logo_url'      => 'nullable|url|max:255',
+                    'support_url'   => 'nullable|url|max:255',
+                    'copyright_text'=> 'nullable|string|max:200',
+                ]);
+                foreach ($validated as $key => $val) {
+                    Setting::set($key, $val ?? '', 'system_display');
+                }
+                break;
+
             case 'domains':
                 $validated = $request->validate([
                     'default_php_version' => 'required|in:' . implode(',', config('opterius.php_versions', ['8.1', '8.2', '8.3', '8.4'])),
                 ]);
                 Setting::set('default_php_version', $validated['default_php_version'], 'system_domains');
+                break;
+
+            case 'mail':
+                $validated = $request->validate([
+                    'default_mailbox_quota' => 'required|integer|min:100|max:102400',
+                    'webmail_url'           => 'nullable|string|max:255',
+                    'max_recipients_per_email' => 'required|integer|min:1|max:1000',
+                    'enable_dkim_by_default'=> 'nullable|boolean',
+                ]);
+                Setting::set('default_mailbox_quota', (string)$validated['default_mailbox_quota'], 'system_mail');
+                Setting::set('webmail_url', $validated['webmail_url'] ?? '', 'system_mail');
+                Setting::set('max_recipients_per_email', (string)$validated['max_recipients_per_email'], 'system_mail');
+                Setting::set('enable_dkim_by_default', $request->has('enable_dkim_by_default') ? '1' : '0', 'system_mail');
+                break;
+
+            case 'security':
+                $validated = $request->validate([
+                    'enforce_2fa'            => 'nullable|boolean',
+                    'max_login_attempts'     => 'required|integer|min:3|max:50',
+                    'session_timeout_minutes'=> 'required|integer|min:15|max:1440',
+                    'block_duration_minutes' => 'required|integer|min:5|max:1440',
+                ]);
+                Setting::set('enforce_2fa', $request->has('enforce_2fa') ? '1' : '0', 'system_security');
+                Setting::set('max_login_attempts', (string)$validated['max_login_attempts'], 'system_security');
+                Setting::set('session_timeout_minutes', (string)$validated['session_timeout_minutes'], 'system_security');
+                Setting::set('block_duration_minutes', (string)$validated['block_duration_minutes'], 'system_security');
+                break;
+
+            case 'ssl':
+                $validated = $request->validate([
+                    'auto_ssl_provider'  => 'required|in:letsencrypt,zerossl',
+                    'force_https_default'=> 'nullable|boolean',
+                    'acme_email'         => 'nullable|email|max:255',
+                    'hsts_enabled'       => 'nullable|boolean',
+                ]);
+                Setting::set('auto_ssl_provider', $validated['auto_ssl_provider'], 'system_ssl');
+                Setting::set('force_https_default', $request->has('force_https_default') ? '1' : '0', 'system_ssl');
+                Setting::set('acme_email', $validated['acme_email'] ?? '', 'system_ssl');
+                Setting::set('hsts_enabled', $request->has('hsts_enabled') ? '1' : '0', 'system_ssl');
+                break;
+
+            case 'php':
+                $validated = $request->validate([
+                    'max_execution_time' => 'required|integer|min:10|max:3600',
+                    'memory_limit'       => 'required|string|max:10',
+                    'upload_max_filesize'=> 'required|string|max:10',
+                    'post_max_size'      => 'required|string|max:10',
+                    'disable_functions'  => 'nullable|string|max:1000',
+                ]);
+                foreach ($validated as $key => $val) {
+                    Setting::set($key, $val ?? '', 'system_php');
+                }
+                break;
+
+            case 'notifications':
+                $validated = $request->validate([
+                    'alert_email'             => 'nullable|email|max:255',
+                    'disk_alert_threshold'    => 'required|integer|min:50|max:99',
+                    'ssl_expiry_alert_days'   => 'required|integer|min:3|max:60',
+                    'notify_on_account_create'=> 'nullable|boolean',
+                ]);
+                Setting::set('alert_email', $validated['alert_email'] ?? '', 'system_notifications');
+                Setting::set('disk_alert_threshold', (string)$validated['disk_alert_threshold'], 'system_notifications');
+                Setting::set('ssl_expiry_alert_days', (string)$validated['ssl_expiry_alert_days'], 'system_notifications');
+                Setting::set('notify_on_account_create', $request->has('notify_on_account_create') ? '1' : '0', 'system_notifications');
                 break;
 
             case 'integrations':
@@ -86,16 +157,24 @@ class SystemSettingsController extends Controller
                     'maxmind_account_id'  => 'nullable|string|max:32',
                     'maxmind_license_key' => 'nullable|string|max:80',
                 ]);
-                // Empty string clears the key — useful for revoking the integration.
                 Setting::set('integrations_bunnycdn_api_key',    $validated['bunnycdn_api_key']    ?? '', 'system_integrations');
                 Setting::set('integrations_bunnycdn_prefix',     $validated['bunnycdn_prefix']     ?? 'opterius', 'system_integrations');
                 Setting::set('integrations_maxmind_account_id',  $validated['maxmind_account_id']  ?? '', 'system_integrations');
                 Setting::set('integrations_maxmind_license_key', $validated['maxmind_license_key'] ?? '', 'system_integrations');
                 break;
 
+            case 'system':
+                $validated = $request->validate([
+                    'backup_retention_days' => 'required|integer|min:1|max:365',
+                    'maintenance_mode'      => 'nullable|boolean',
+                    'timezone'              => 'required|string|max:50',
+                ]);
+                Setting::set('backup_retention_days', (string)$validated['backup_retention_days'], 'system_system');
+                Setting::set('maintenance_mode', $request->has('maintenance_mode') ? '1' : '0', 'system_system');
+                Setting::set('timezone', $validated['timezone'], 'system_system');
+                break;
+
             default:
-                // No-op for not-yet-implemented categories. The form button
-                // is hidden in those views, so we should never get here.
                 return back();
         }
 
