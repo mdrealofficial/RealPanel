@@ -87,7 +87,7 @@ return [
     // Must match OPTERIUS_SSO_SECRET on opterius.com.
     'sso_secret' => env('OPTERIUS_SSO_SECRET'),
 
-    'version' => '2.9.17',
+    'version' => file_exists(base_path('version.txt')) ? trim(file_get_contents(base_path('version.txt'))) : env('REALPANEL_VERSION', '2.9.17'),
     'github_repo' => env('REALPANEL_GITHUB_REPO', 'mdrealofficial/RealPanel'),
     'update_version_url' => env('REALPANEL_UPDATE_URL', 'https://raw.githubusercontent.com/mdrealofficial/RealPanel/main/version.txt'),
     'license_key' => env('OPTERIUS_LICENSE_KEY', ''),
