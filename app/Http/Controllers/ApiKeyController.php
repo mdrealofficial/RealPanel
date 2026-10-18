@@ -28,6 +28,7 @@ class ApiKeyController extends Controller
             'account.terminate' => 'Terminate (delete) accounts',
             'account.password'  => 'Change account passwords',
             'account.package'   => 'Change account packages',
+            'account.sso'       => 'Client area one-click login (SSO)',
         ];
 
         return view('api-keys.create', compact('servers', 'permissions'));
