@@ -87,14 +87,20 @@ class SetupController extends Controller
             }
 
             $agentToken = config('opterius.agent_secret') ?: env('OPTERIUS_AGENT_SECRET', '');
+            if (empty($agentToken) && file_exists('/etc/opterius/agent.conf')) {
+                $conf = file_get_contents('/etc/opterius/agent.conf');
+                if (preg_match('/^secret=(.+)$/m', $conf, $m)) {
+                    $agentToken = trim($m[1]);
+                }
+            }
 
             Server::create([
                 'user_id'     => $admin->id,
-                'name'        => 'Opterius Server',
+                'name'        => 'RealPanel Server',
                 'ip_address'  => $publicIp ?: '127.0.0.1',
                 'hostname'    => gethostname() ?: 'localhost',
                 'agent_url'   => 'http://127.0.0.1:7443',
-                'agent_token' => $agentToken,
+                'agent_token' => $agentToken ?: '',
                 'status'      => 'online',
             ]);
         }

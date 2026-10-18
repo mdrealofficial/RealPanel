@@ -107,7 +107,7 @@
 
                     <div>
                         <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">One-line install command</div>
-                        <pre class="bg-gray-900 text-green-400 rounded-lg p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">curl -sL https://get.opterius.com/agent | bash -s -- --token={{ $server->agent_token }}</pre>
+                        <pre class="bg-gray-900 text-green-400 rounded-lg p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">curl -sL https://raw.githubusercontent.com/mdrealofficial/RealPanel/main/installer/install-agent.sh | bash -s -- --token={{ $server->agent_token }}</pre>
                     </div>
 
                     <div>
@@ -147,7 +147,7 @@
 
                 <div class="mb-4">
                     <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1.5">One-line install command</div>
-                    <pre class="bg-gray-900 text-green-400 rounded-lg p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">curl -sL https://get.opterius.com/agent | bash -s -- --token={{ $server->agent_token }}</pre>
+                    <pre class="bg-gray-900 text-green-400 rounded-lg p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-all">curl -sL https://raw.githubusercontent.com/mdrealofficial/RealPanel/main/installer/install-agent.sh | bash -s -- --token={{ $server->agent_token }}</pre>
                 </div>
 
                 <div>

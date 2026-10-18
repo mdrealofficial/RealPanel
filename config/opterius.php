@@ -29,6 +29,7 @@ return [
 
     'agent_port' => env('OPTERIUS_AGENT_PORT', 7443),
     'agent_timeout' => env('OPTERIUS_AGENT_TIMEOUT', 30),
+    'agent_secret' => env('REALPANEL_AGENT_SECRET', env('OPTERIUS_AGENT_SECRET', '')),
 
     /*
     |--------------------------------------------------------------------------
