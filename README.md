@@ -105,13 +105,12 @@ The panel cannot perform any server operations on its own. All privileged action
 ---
 
 ## Installation
-
-SSH into a fresh server (Ubuntu 22.04/24.04, Debian 12, or AlmaLinux 9) as root and run:
-
-```bash
-curl -sL https://get.opterius.com/install.sh -o /tmp/install.sh
-bash /tmp/install.sh
-```
+ 
+ SSH into a fresh server (Ubuntu 22.04/24.04, Debian 12, or AlmaLinux 9) as root and run:
+ 
+ ```bash
+ curl -sL https://raw.githubusercontent.com/mdrealofficial/RealPanel/main/installer/install.sh -o /tmp/install.sh && bash /tmp/install.sh
+ ```
 
 The installer sets up everything automatically: Nginx, PHP-FPM, MariaDB, Dovecot, Postfix, PowerDNS, Roundcube, phpMyAdmin, Certbot, Node.js, the panel, and the agent.
 

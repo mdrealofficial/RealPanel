@@ -1,15 +1,11 @@
 #!/bin/bash
 #
-# Opterius Panel Installer
-# Usage: curl -sL https://get.opterius.com/install.sh -o /tmp/install.sh && bash /tmp/install.sh
+# RealPanel Installer
+# Usage: curl -sL https://raw.githubusercontent.com/mdrealofficial/RealPanel/main/installer/install.sh -o /tmp/install.sh && bash /tmp/install.sh
 #
 # Supports: Ubuntu 22.04, Ubuntu 24.04, Debian 12, AlmaLinux 9
 #
 set -uo pipefail
-# Note: we intentionally do NOT use `set -e` (exit on error) because many
-# steps in the installer are best-effort (certbot, optional packages, service
-# reloads) and a non-zero exit from any of them should not kill the entire
-# installation. Critical steps check their own exit codes explicitly.
 
 # ============================================================
 # Colors
@@ -31,7 +27,7 @@ err()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 # ============================================================
 [[ $EUID -ne 0 ]] && err "This script must be run as root."
 
-info "Starting Opterius Panel installation..."
+info "Starting RealPanel installation..."
 echo ""
 
 # ============================================================
@@ -78,7 +74,7 @@ DB_NAME="opterius"
 DB_USER="opterius"
 DB_PASS=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 32)
 AGENT_SECRET=$(openssl rand -hex 32)
-GITHUB_PANEL="https://github.com/opterius/panel"
+GITHUB_PANEL="https://github.com/mdrealofficial/RealPanel.git"
 AGENT_DOWNLOAD_URL="https://get.opterius.com/agent/opterius-agent-linux-amd64"
 
 # Detect public IP early — used in .env and Opterius Mail config
@@ -924,13 +920,25 @@ ok "Nginx configured for panel"
 # ============================================================
 # Step 11: Install Go Agent
 # ============================================================
-info "Installing Opterius Agent..."
+info "Compiling and installing RealPanel Agent..."
+
+# Install Go if not present
+if ! command -v go &>/dev/null; then
+    info "Installing Golang compiler..."
+    if [[ "$PKG_MANAGER" == "apt" ]]; then
+        apt-get install -y -qq golang-go
+    else
+        dnf install -y -q golang
+    fi
+fi
 
 mkdir -p "$AGENT_CONF_DIR"
 
-# Download agent binary
-curl -sL -o "${AGENT_DIR}/opterius-agent" "$AGENT_DOWNLOAD_URL"
+# Build agent binary directly from open-source repository
+cd "${PANEL_DIR}/agent"
+go build -o "${AGENT_DIR}/opterius-agent" .
 chmod +x "${AGENT_DIR}/opterius-agent"
+ok "RealPanel Agent compiled successfully"
 
 # Write agent config
 cat > "${AGENT_CONF_DIR}/agent.conf" <<EOCONF
@@ -1006,7 +1014,7 @@ SERVER_IP=$(hostname -I | awk '{print $1}')
 
 echo ""
 echo -e "${GREEN}${BOLD}========================================${NC}"
-echo -e "${GREEN}${BOLD}   Opterius Panel installed!${NC}"
+echo -e "${GREEN}${BOLD}     RealPanel Installed!${NC}"
 echo -e "${GREEN}${BOLD}========================================${NC}"
 echo ""
 echo -e "  Panel URL:    ${CYAN}${PANEL_SCHEME}://${SERVER_IP}:${PANEL_PORT}${NC}"
@@ -1024,14 +1032,5 @@ if [[ "$PANEL_SCHEME" == "http" ]]; then
     echo -e "${YELLOW}  your hostname DNS to this server and issue an SSL certificate.${NC}"
 fi
 echo ""
-echo -e "  Documentation: ${CYAN}https://opterius.com/docs${NC}"
-echo -e "  GitHub:        ${CYAN}https://github.com/opterius/panel${NC}"
-echo ""
-echo ""
-read -rp "  Would you like to star Opterius on GitHub? (y/n): " STAR_ANSWER
-if [[ "$STAR_ANSWER" == "y" || "$STAR_ANSWER" == "Y" ]]; then
-    echo ""
-    echo -e "  ${CYAN}Thanks! Open this link in your browser:${NC}"
-    echo -e "  ${BOLD}https://github.com/opterius/panel${NC}"
-fi
+echo -e "  GitHub:        ${CYAN}https://github.com/mdrealofficial/RealPanel${NC}"
 echo ""
