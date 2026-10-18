@@ -25,6 +25,9 @@ func main() {
 
 	// 1. Health & System Metrics
 	mux.HandleFunc("/health", handlers.HealthHandler)
+	mux.HandleFunc("/version", handlers.VersionHandler)
+	mux.HandleFunc("/update/log", handlers.UpdateLogHandler)
+	mux.HandleFunc("/update/run", handlers.UpdateRunHandler)
 	mux.HandleFunc("/metrics/realtime", handlers.RealtimeMetricsHandler)
 	mux.HandleFunc("/stats/server", handlers.ServerStatsHandler)
 	mux.HandleFunc("/metrics/top-processes", handlers.TopProcessesHandler)
