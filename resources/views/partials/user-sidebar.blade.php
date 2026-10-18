@@ -403,6 +403,6 @@
     </nav>
 
     <div class="px-4 py-3 border-t border-gray-800 text-xs text-gray-500">
-        <div>Opterius Panel v{{ config('opterius.version', '1.0.0') }}</div>
+        <div>RealPanel v{{ config('opterius.version', '1.0.0') }}</div>
     </div>
 </aside>

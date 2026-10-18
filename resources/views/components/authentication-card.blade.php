@@ -7,5 +7,5 @@
         {{ $slot }}
     </div>
 
-    <p class="mt-6 text-xs text-gray-500">&copy; {{ date('Y') }} Opterius</p>
+    <p class="mt-6 text-xs text-gray-500">&copy; {{ date('Y') }} {{ \App\Models\Setting::get('panel_name', 'RealPanel') }}</p>
 </div>

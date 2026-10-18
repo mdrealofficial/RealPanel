@@ -1,8 +1,16 @@
 <aside x-data="{ open: true }" class="w-64 bg-gray-900 text-gray-300 flex flex-col shrink-0">
+    @php
+        $customLogo = \App\Models\Setting::get('logo_url');
+        $panelName = \App\Models\Setting::get('panel_name', 'RealPanel');
+    @endphp
     <!-- Logo -->
     <div class="h-16 flex items-center px-6 border-b border-gray-800">
-        <a href="{{ route('dashboard') }}" class="flex items-center">
-            <img src="{{ asset('img/logo.png') }}" alt="Opterius">
+        <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
+            @if($customLogo)
+                <img src="{{ $customLogo }}" alt="{{ $panelName }}" class="h-8 max-w-[180px] object-contain">
+            @else
+                <img src="{{ asset('img/logo.png') }}" alt="{{ $panelName }}" class="h-8 max-w-[180px] object-contain">
+            @endif
         </a>
     </div>
 
@@ -163,6 +171,6 @@
 
     <!-- Panel Info -->
     <div class="px-4 py-3 border-t border-gray-800 text-xs text-gray-500">
-        <div>Opterius Panel v1.0</div>
+        <div>RealPanel v{{ config('opterius.version', '1.0.0') }}</div>
     </div>
 </aside>

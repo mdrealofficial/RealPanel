@@ -3,7 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Opterius Panel</title>
+    @php
+        $panelName = \App\Models\Setting::get('panel_name', 'RealPanel');
+        $customLogo = \App\Models\Setting::get('logo_url');
+    @endphp
+    <title>{{ $panelName }}</title>
     <link rel="icon" type="image/png" href="{{ asset('img/favicon.png') }}">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />
@@ -14,7 +18,11 @@
     <!-- Nav -->
     <nav class="flex items-center justify-between px-8 py-5">
         <div class="flex items-center">
-            <img src="{{ asset('img/logo.png') }}" alt="Opterius">
+            @if($customLogo)
+                <img src="{{ $customLogo }}" alt="{{ $panelName }}" class="h-8 max-w-[200px] object-contain">
+            @else
+                <img src="{{ asset('img/logo.png') }}" alt="{{ $panelName }}" class="h-8 max-w-[200px] object-contain">
+            @endif
         </div>
         <div class="flex items-center space-x-4">
             @auth
@@ -33,8 +41,11 @@
             </div>
 
             <h1 class="text-5xl sm:text-6xl font-bold leading-tight">
-                <span class="text-white">Opterius</span>
-                <span style="color:#ff6900;">Panel</span>
+                @if($panelName === 'RealPanel')
+                    <span class="text-white">Real</span><span style="color:#ff6900;">Panel</span>
+                @else
+                    <span class="text-white">{{ $panelName }}</span>
+                @endif
             </h1>
 
             <p class="mt-6 text-lg text-gray-400 leading-relaxed">
@@ -68,7 +79,7 @@
 
     <!-- Footer -->
     <footer class="px-8 py-6 text-center">
-        <p class="text-sm text-gray-600">&copy; {{ date('Y') }} Opterius. All rights reserved.</p>
+        <p class="text-sm text-gray-600">&copy; {{ date('Y') }} {{ $panelName }}. All rights reserved.</p>
     </footer>
 
 </body>
