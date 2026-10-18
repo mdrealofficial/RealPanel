@@ -92,14 +92,6 @@
         </x-dropdown>
         @endif
 
-        {{-- License status badge — visible to admins --}}
-        @if(Auth::user()->isAdmin())
-            <a href="{{ route('admin.license.index') }}"
-               class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Community Edition
-            </a>
-        @endif
 
         @if(session('admin_id'))
             <form method="POST" action="{{ route('user.return-to-admin') }}">
