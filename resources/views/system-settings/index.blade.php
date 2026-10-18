@@ -355,7 +355,7 @@
                                     <h4 class="font-bold text-gray-900">BunnyCDN</h4>
                                     <p class="text-xs text-gray-500 mt-0.5">Image and asset CDN. Customers can enable per-domain acceleration powered by your BunnyCDN account.</p>
                                 </div>
-                                @if (! empty($settings['integrations_bunnycdn_api_key'] ?? $settings['bunnycdn_api_key']))
+                                @if (! empty($settings['integrations_bunnycdn_api_key'] ?? ($settings['bunnycdn_api_key'] ?? null)))
                                     <span class="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-2.5 py-1 rounded-full">
                                         <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Configured
                                     </span>
@@ -370,14 +370,14 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1.5">API Key</label>
                                     <input type="password" name="bunnycdn_api_key" autocomplete="off"
-                                           value="{{ $settings['integrations_bunnycdn_api_key'] ?? $settings['bunnycdn_api_key'] ?? '' }}"
+                                           value="{{ $settings['integrations_bunnycdn_api_key'] ?? ($settings['bunnycdn_api_key'] ?? '') }}"
                                            placeholder="Paste your BunnyCDN API key"
                                            class="w-full rounded-lg border-gray-300 shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1.5">Zone Name Prefix</label>
                                     <input type="text" name="bunnycdn_prefix" maxlength="32" pattern="[a-z0-9-]*"
-                                           value="{{ $settings['integrations_bunnycdn_prefix'] ?? $settings['bunnycdn_prefix'] ?? 'realpanel' }}"
+                                           value="{{ $settings['integrations_bunnycdn_prefix'] ?? ($settings['bunnycdn_prefix'] ?? 'realpanel') }}"
                                            class="w-full max-w-sm rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                                 </div>
                             </div>
@@ -390,7 +390,7 @@
                                     <h4 class="font-bold text-gray-900">MaxMind GeoLite2</h4>
                                     <p class="text-xs text-gray-500 mt-0.5">Free IP-to-country database powering visitor analytics country flags.</p>
                                 </div>
-                                @if (! empty($settings['integrations_maxmind_license_key'] ?? $settings['maxmind_license_key']))
+                                @if (! empty($settings['integrations_maxmind_license_key'] ?? ($settings['maxmind_license_key'] ?? null)))
                                     <span class="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-2.5 py-1 rounded-full">
                                         <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Configured
                                     </span>
@@ -405,14 +405,14 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1.5">Account ID</label>
                                     <input type="text" name="maxmind_account_id" autocomplete="off"
-                                           value="{{ $settings['integrations_maxmind_account_id'] ?? $settings['maxmind_account_id'] ?? '' }}"
+                                           value="{{ $settings['integrations_maxmind_account_id'] ?? ($settings['maxmind_account_id'] ?? '') }}"
                                            placeholder="123456"
                                            class="w-full max-w-sm rounded-lg border-gray-300 shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1.5">License Key</label>
                                     <input type="password" name="maxmind_license_key" autocomplete="off"
-                                           value="{{ $settings['integrations_maxmind_license_key'] ?? $settings['maxmind_license_key'] ?? '' }}"
+                                           value="{{ $settings['integrations_maxmind_license_key'] ?? ($settings['maxmind_license_key'] ?? '') }}"
                                            placeholder="Paste your MaxMind license key"
                                            class="w-full rounded-lg border-gray-300 shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500">
                                 </div>
