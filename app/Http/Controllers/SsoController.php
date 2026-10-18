@@ -78,12 +78,6 @@ class SsoController extends Controller
      */
     public function login(Request $request): RedirectResponse
     {
-        $secret = config('opterius.sso_secret');
-
-        if (empty($secret)) {
-            return redirect()->route('login')->withErrors(['email' => 'SSO is not configured.']);
-        }
-
         $token = $request->query('token', '');
         if (!$token) {
             return redirect()->route('login');

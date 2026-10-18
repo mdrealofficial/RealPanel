@@ -30,6 +30,7 @@ Route::prefix('v1')->middleware('api_key')->group(function () {
     Route::post('/accounts/terminate', [WhmcsApiController::class, 'terminateAccount']);
     Route::post('/accounts/password', [WhmcsApiController::class, 'changePassword']);
     Route::post('/accounts/package', [WhmcsApiController::class, 'changePackage']);
+    Route::post('/accounts/sso', [WhmcsApiController::class, 'createSsoToken']);
 
     // Info
     Route::get('/packages', [WhmcsApiController::class, 'listPackages']);

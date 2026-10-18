@@ -11,6 +11,8 @@ use App\Services\AgentService;
 use App\Services\ProvisioningService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class WhmcsApiController extends Controller
 {
@@ -27,7 +29,7 @@ class WhmcsApiController extends Controller
             'result'  => 'success',
             'message' => 'Connection successful.',
             'data'    => [
-                'panel'   => 'Opterius Panel',
+                'panel'   => 'RealPanel',
                 'version' => config('opterius.version', '1.0.0'),
             ],
         ]);
@@ -253,6 +255,32 @@ class WhmcsApiController extends Controller
         return $result['success']
             ? response()->json(['result' => 'success', 'message' => "Package changed to {$package->name} for {$account->username}."])
             : $this->error($result['error'], 500);
+    }
+
+    /**
+     * Create a one-time Single Sign-On (SSO) URL for WHMCS Client Area auto-login.
+     */
+    public function createSsoToken(Request $request): JsonResponse
+    {
+        $account = $this->findAccount($request);
+        if (!$account) {
+            return $this->error('Account not found.', 404);
+        }
+
+        $user = $account->user;
+        if (!$user) {
+            return $this->error('No panel user associated with this account.', 404);
+        }
+
+        // Generate 60-second single-use token
+        $token = Str::random(48);
+        Cache::put("sso:{$token}", $user->id, 60);
+
+        return response()->json([
+            'result'       => 'success',
+            'token'        => $token,
+            'redirect_url' => url('/sso/login') . '?token=' . $token,
+        ]);
     }
 
     /**
