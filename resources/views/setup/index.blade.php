@@ -31,19 +31,18 @@
         <!-- Logo -->
         <div class="text-center mb-8">
             <div class="inline-flex items-center space-x-3">
-                <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center">
-                    <span class="text-white font-bold text-xl">O</span>
-                </div>
-                <span class="text-2xl font-bold text-gray-900">Opterius Panel</span>
+                <a href="/" class="inline-flex items-center">
+                    <img src="{{ asset('img/logo.png') }}" alt="RealPanel" class="h-10 max-w-[220px] object-contain">
+                </a>
             </div>
             <p class="mt-3 text-gray-500">{{ __('setup.welcome') }}</p>
         </div>
 
         <!-- Setup Form -->
         <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div class="px-8 py-6 bg-indigo-600">
+            <div class="px-8 py-6" style="background-color: #ff6900;">
                 <h2 class="text-lg font-semibold text-white">{{ __('setup.create_admin_account') }}</h2>
-                <p class="text-indigo-200 text-sm mt-1">{{ __('setup.create_admin_desc') }}</p>
+                <p class="text-orange-100 text-sm mt-1">{{ __('setup.create_admin_desc') }}</p>
             </div>
 
             <form action="{{ route('setup.store') }}" method="POST" class="px-8 py-6 space-y-5">
@@ -60,14 +59,14 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ __('setup.full_name') }}</label>
                     <input type="text" name="name" value="{{ old('name') }}" required autofocus
-                        class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-orange-500 focus:ring-orange-500"
                         placeholder="{{ __('setup.full_name_placeholder') }}">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ __('setup.email_address') }}</label>
                     <input type="email" name="email" value="{{ old('email') }}" required
-                        class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-orange-500 focus:ring-orange-500"
                         placeholder="{{ __('setup.email_placeholder') }}">
                     <p class="mt-1 text-xs text-gray-400">{{ __('setup.email_hint') }}</p>
                 </div>
@@ -75,7 +74,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ __('setup.password') }}</label>
                     <input type="password" name="password" x-model="password" required
-                        class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-orange-500 focus:ring-orange-500"
                         placeholder="{{ __('setup.password_placeholder') }}">
                     <div class="mt-2 flex items-center space-x-3">
                         <div class="flex space-x-1 flex-1">
@@ -99,13 +98,16 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ __('setup.confirm_password') }}</label>
                     <input type="password" name="password_confirmation" required
-                        class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-orange-500 focus:ring-orange-500"
                         placeholder="{{ __('setup.confirm_placeholder') }}">
                 </div>
 
                 <button type="submit"
                     :disabled="passwordStrength.score < 3"
-                    class="w-full inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="w-full inline-flex items-center justify-center px-6 py-3 text-white text-sm font-medium rounded-lg transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    style="background-color: #ff6900;"
+                    onmouseover="this.style.backgroundColor='#e65d00'"
+                    onmouseout="this.style.backgroundColor='#ff6900'">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                     {{ __('setup.complete_setup') }}
                 </button>
@@ -113,8 +115,9 @@
         </div>
 
         <p class="text-center text-xs text-gray-400 mt-6">
-            Opterius Panel v{{ config('opterius.version', '1.0.0') }}
+            RealPanel v{{ config('opterius.version', '1.0.0') }}
         </p>
+
     </div>
 
 </body>
