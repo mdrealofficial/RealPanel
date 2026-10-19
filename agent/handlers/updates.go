@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"opterius-agent-oss/system"
 )
@@ -91,14 +92,78 @@ func UpdateRunHandler(w http.ResponseWriter, r *http.Request) {
 		writeLog("Artisan Output:\n" + artOut + "\n")
 	}
 
-	// 4. Ensure ttyd Web Terminal is installed and running
-	go func() {
-		ttydSetupCmd := `
+	// 4. Automatic System & Service Repairs (PowerDNS, DNSStubListener, ttyd, etc.)
+	writeLog("Checking & applying automatic service maintenance fixes...\n")
+	sysFixCmd := `
+# --- PowerDNS Database Schema & Fixes ---
+if command -v mysql >/dev/null 2>&1 && mysql -u root -e "USE pdns;" >/dev/null 2>&1; then
+    mysql -u root <<'EOSQL' >/dev/null 2>&1 || true
+USE pdns;
+ALTER TABLE domains ADD COLUMN IF NOT EXISTS master VARCHAR(128) DEFAULT NULL AFTER name;
+ALTER TABLE domains ADD COLUMN IF NOT EXISTS last_check INT DEFAULT NULL AFTER master;
+ALTER TABLE domains ADD COLUMN IF NOT EXISTS options VARCHAR(64000) DEFAULT NULL AFTER account;
+ALTER TABLE domains ADD COLUMN IF NOT EXISTS catalog VARCHAR(255) DEFAULT NULL AFTER options;
+ALTER TABLE records ADD COLUMN IF NOT EXISTS ordername VARCHAR(255) BINARY DEFAULT NULL AFTER disabled;
+ALTER TABLE records ADD COLUMN IF NOT EXISTS auth TINYINT(1) DEFAULT 1 AFTER ordername;
+
+CREATE TABLE IF NOT EXISTS comments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  domain_id INT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  type VARCHAR(10) NOT NULL,
+  modified_at INT NOT NULL,
+  account VARCHAR(40) CHARACTER SET 'utf8mb4' DEFAULT NULL,
+  comment TEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS domainmetadata (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  domain_id INT NOT NULL,
+  kind VARCHAR(32),
+  content TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS cryptokeys (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  domain_id INT NOT NULL,
+  flags INT NOT NULL,
+  active BOOL,
+  published BOOL DEFAULT 1,
+  content TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS tsigkeys (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255),
+  algorithm VARCHAR(50),
+  secret VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+EOSQL
+
+    # Clean up duplicate package default configs in pdns.d that conflict with pdns.conf
+    rm -f /etc/powerdns/pdns.d/bind.conf /etc/powerdns/pdns.d/*.conf 2>/dev/null || true
+    chown -R pdns:pdns /etc/powerdns 2>/dev/null || true
+
+    # Make sure systemd-resolved is not blocking port 53
+    if systemctl is-active --quiet systemd-resolved 2>/dev/null || [ -d /etc/systemd/resolved.conf.d ]; then
+        mkdir -p /etc/systemd/resolved.conf.d
+        cat > /etc/systemd/resolved.conf.d/10-powerdns.conf <<'EORESOLV'
+[Resolve]
+DNSStubListener=no
+EORESOLV
+        systemctl restart systemd-resolved 2>/dev/null || true
+    fi
+
+    # Restart PowerDNS
+    systemctl restart pdns 2>/dev/null || true
+fi
+
+# --- ttyd Web Terminal Ensure ---
 if [ ! -f /usr/local/bin/ttyd ]; then
     ARCH=$(uname -m)
     curl -fsSL "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${ARCH}" -o /usr/local/bin/ttyd 2>/dev/null || \
     curl -fsSL "https://github.com/tsl0922/ttyd/releases/latest/download/ttyd.${ARCH}" -o /usr/local/bin/ttyd 2>/dev/null
-    chmod +x /usr/local/bin/ttyd
+    chmod +x /usr/local/bin/ttyd 2>/dev/null || true
 fi
 
 if [ ! -f /etc/systemd/system/ttyd.service ]; then
@@ -118,12 +183,18 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 EOSERVICE_TTYD
-    systemctl daemon-reload
+    systemctl daemon-reload 2>/dev/null || true
     systemctl enable --now ttyd.service 2>/dev/null || true
 fi
 `
-		system.ExecCommand("bash", "-c", ttydSetupCmd)
+	sysFixOut, _ := system.ExecCommand("bash", "-c", sysFixCmd)
+	if sysFixOut != "" {
+		writeLog("System Maintenance Output:\n" + sysFixOut + "\n")
+	}
 
+	// 5. Rebuild and restart the Go agent in the background so this request finishes cleanly
+	go func() {
+		time.Sleep(1 * time.Second)
 		agentBuildCmd := fmt.Sprintf("cd %s/agent && go build -o /usr/local/bin/opterius-agent . && systemctl restart opterius-agent", panelDir)
 		system.ExecCommand("bash", "-c", agentBuildCmd)
 	}()
