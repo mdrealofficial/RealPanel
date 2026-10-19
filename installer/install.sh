@@ -1127,8 +1127,171 @@ if [[ "$PKG_MANAGER" == "apt" ]]; then
     ln -sf /etc/nginx/sites-available/realpanel.conf /etc/nginx/sites-enabled/
 fi
 
+# Setup Default Server Pages & 00-default.conf (unbound domains, welcome, 404, stop pages)
+mkdir -p /var/www/default /etc/ssl/realpanel
+if [ ! -f /etc/ssl/realpanel/fallback.crt ]; then
+    openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+        -keyout /etc/ssl/realpanel/fallback.key \
+        -out /etc/ssl/realpanel/fallback.crt \
+        -subj "/CN=realpanel-default" 2>/dev/null || true
+fi
+
+cat > /var/www/default/index.html << 'EODEFAULT_UNBOUND'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Domain Pointed • RealPanel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', system-ui, sans-serif; background: #0b0f19; color: #f1f5f9; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; text-align: center; }
+.card { max-width: 600px; background: rgba(17, 24, 39, 0.9); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 48px 36px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); }
+.badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; padding: 6px 14px; border-radius: 9999px; font-size: 13px; font-weight: 600; margin-bottom: 20px; }
+h1 { font-size: 26px; font-weight: 800; margin-bottom: 12px; }
+p { font-size: 15px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px; }
+.footer { font-size: 12px; color: #64748b; margin-top: 32px; }
+</style>
+</head>
+<body>
+<div class="card">
+<div class="badge">DNS Connected • Server Online</div>
+<h1>Domain Pointed to Server</h1>
+<p>This domain is pointed to this server IP address, but has not yet been assigned to an active hosting account in <strong>RealPanel</strong>.</p>
+<div class="footer">Powered by <strong>RealPanel</strong> • High Performance Web Hosting Platform</div>
+</div>
+</body>
+</html>
+EODEFAULT_UNBOUND
+
+cat > /var/www/default/welcome.html << 'EODEFAULT_WELCOME'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Welcome to {domain}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; text-align: center; }
+.card { max-width: 640px; background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 48px 36px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+.badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; padding: 6px 14px; border-radius: 9999px; font-size: 13px; font-weight: 600; margin-bottom: 20px; }
+h1 { font-size: 28px; font-weight: 800; margin-bottom: 12px; }
+.domain { color: #38bdf8; }
+p { font-size: 15px; color: #94a3b8; line-height: 1.6; margin-bottom: 28px; }
+.tip { background: rgba(99,102,241,0.08); border: 1px dashed rgba(99,102,241,0.35); border-radius: 10px; padding: 14px 18px; font-size: 13px; color: #cbd5e1; margin-bottom: 24px; text-align: left; }
+.tip code { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #f1f5f9; }
+.footer { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="card">
+<div class="badge">Hosting Environment Ready</div>
+<h1><span class="domain">{domain}</span> is successfully hosted!</h1>
+<p>Your web hosting account has been created and configured on <strong>{panel_name}</strong>.</p>
+<div class="tip">To replace this landing page, upload your website files into <code>public_html</code> and delete or replace <code>index.html</code>.</div>
+<div class="footer">Managed via <strong>{panel_name}</strong> • High Performance Cloud Infrastructure</div>
+</div>
+</body>
+</html>
+EODEFAULT_WELCOME
+
+cat > /var/www/default/404.html << 'EODEFAULT_404'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>404 - Page Not Found</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', system-ui, sans-serif; background: #090d16; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; text-align: center; }
+.card { max-width: 520px; background: rgba(17, 24, 39, 0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 48px 36px; }
+.code { font-size: 80px; font-weight: 900; background: linear-gradient(135deg, #6366f1, #a855f7); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+h1 { font-size: 22px; margin-bottom: 12px; }
+p { font-size: 14px; color: #94a3b8; line-height: 1.5; margin-bottom: 24px; }
+.footer { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="card">
+<div class="code">404</div>
+<h1>Page Not Found</h1>
+<p>The page or resource you are looking for does not exist on this server.</p>
+<div class="footer">RealPanel Web Server</div>
+</div>
+</body>
+</html>
+EODEFAULT_404
+
+cat > /var/www/default/suspended.html << 'EODEFAULT_SUSPENDED'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Website Suspended</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Inter', system-ui, sans-serif; background: #0d1117; color: #f1f5f9; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; text-align: center; }
+.card { max-width: 560px; background: rgba(22, 27, 34, 0.9); border: 1px solid rgba(239,68,68,0.25); border-radius: 20px; padding: 48px 36px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.6); }
+.badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; padding: 6px 14px; border-radius: 9999px; font-size: 13px; font-weight: 600; margin-bottom: 20px; }
+h1 { font-size: 26px; font-weight: 800; margin-bottom: 12px; }
+p { font-size: 15px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px; }
+.footer { font-size: 12px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="card">
+<div class="badge">Service Suspended</div>
+<h1>This Website is Currently Inactive</h1>
+<p>The hosting service for this website has been temporarily suspended. If you are the website owner, please contact technical support.</p>
+<div class="footer">RealPanel Server Management</div>
+</div>
+</body>
+</html>
+EODEFAULT_SUSPENDED
+
+chown -R www-data:www-data /var/www/default 2>/dev/null || chown -R nginx:nginx /var/www/default 2>/dev/null || true
+
+DEFAULT_VHOST="/etc/nginx/conf.d/00-default.conf"
+if [[ "$PKG_MANAGER" == "apt" ]]; then
+    DEFAULT_VHOST="/etc/nginx/sites-available/00-default.conf"
+fi
+
+cat > ${DEFAULT_VHOST} << 'EODEFAULT_NGINX'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+
+    ssl_certificate /etc/ssl/realpanel/fallback.crt;
+    ssl_certificate_key /etc/ssl/realpanel/fallback.key;
+
+    server_name _;
+    root /var/www/default;
+    index index.html index.htm;
+
+    location ^~ /.well-known/acme-challenge/ {
+        allow all;
+        default_type "text/plain";
+    }
+
+    error_page 404 /404.html;
+    location = /404.html {
+        internal;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+EODEFAULT_NGINX
+
+if [[ "$PKG_MANAGER" == "apt" ]]; then
+    rm -f /etc/nginx/sites-enabled/default
+    ln -sf /etc/nginx/sites-available/00-default.conf /etc/nginx/sites-enabled/
+fi
+
 nginx -t && systemctl reload nginx
-ok "Nginx configured for panel"
+ok "Nginx configured for panel and default server pages"
 
 # ============================================================
 # Step 11: Install Go Agent

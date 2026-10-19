@@ -46,6 +46,8 @@ func main() {
 	mux.HandleFunc("/domains/alias-add", handlers.DomainAliasAddHandler)
 	mux.HandleFunc("/domains/alias-remove", handlers.DomainAliasRemoveHandler)
 	mux.HandleFunc("/domains/toggle-htaccess", handlers.DomainToggleHtaccessHandler)
+	mux.HandleFunc("/account/suspend", handlers.AccountSuspendHandler)
+	mux.HandleFunc("/server/pages-sync", handlers.ServerPagesSyncHandler)
 
 	// 3. Databases
 	mux.HandleFunc("/databases/create", handlers.DbCreateHandler)

@@ -8,7 +8,8 @@ return [
 
     // Sidebar category labels
     'cat_display'       => 'Display & Branding',
-    'cat_domains'       => 'Domains',
+    'cat_domains'       => 'Domains & DNS',
+    'cat_pages'         => 'Default Pages',
     'cat_mail'          => 'Mail',
     'cat_security'      => 'Security',
     'cat_ssl'           => 'SSL',
@@ -37,4 +38,19 @@ return [
     'default_ns1_subtext'       => 'e.g. ns1.yourdomain.com (or leave blank to use domain-relative ns1.{domain})',
     'default_ns2_label'         => 'Secondary Nameserver (NS2)',
     'default_ns2_subtext'       => 'e.g. ns2.yourdomain.com (or leave blank to use domain-relative ns2.{domain})',
+
+    // ── Default Pages category ────────────────────────────────────
+    'pages_title'               => 'Default Server & Error Pages',
+    'pages_subtitle'            => 'Manage the design and HTML templates served for unbound domains, new account welcome pages, 404 errors, and suspended sites.',
+    'pages_saved'               => 'Default server pages saved and synchronized to all servers.',
+    'page_reset_success'        => ':page template has been restored to factory default design.',
+    'page_tab_unbound'          => 'Unbound Domain',
+    'page_tab_welcome'          => 'New Domain (Welcome)',
+    'page_tab_404'              => 'Server 404 Error',
+    'page_tab_suspended'        => 'Stop / Suspended',
+    'live_preview'              => 'Live Preview',
+    'reset_default'             => 'Reset to Default',
+    'available_placeholders'    => 'Available Dynamic Placeholders',
+    'save_and_sync'             => 'Save & Sync to All Servers',
+    'close_preview'             => 'Close Preview',
 ];

@@ -10,6 +10,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.45] - 2026-10-20
+
+### Added — Customizable Server Pages & Automatic Default Server Routing
+- **Unbound Domain Page**:
+  - Automatically served via Nginx `00-default.conf` (`default_server` on port 80 and 443) when any domain points its DNS to the server IP address without being bound to an active hosting account.
+  - Built with modern glassmorphism dark aesthetic, status badges, and clear explanatory steps.
+- **Connected Domain Welcome Page**:
+  - Automatically replaces the legacy plain text index page with a gorgeous, high-polish SaaS landing card when domains are created.
+  - Dynamic token support for `{domain}` and `{panel_name}`.
+  - Automatically migrates existing legacy placeholders (e.g. `digi5.cloud`) during update maintenance.
+- **Server 404 Error Page**:
+  - Custom, beautiful server-wide 404 error page with modern typography and quick return navigation.
+- **Stop / Suspended Account Page**:
+  - Displayed whenever an account or domain is suspended or stopped.
+  - Agent `/account/suspend` endpoint locks Linux user login and rewrites virtual hosts to safely route to `/var/www/default/suspended.html` (preserving SSL certificates), and restores original configs seamlessly upon unsuspend.
+- **Administrator Management in Admin Panel**:
+  - New **Default Pages** tab (`System Settings → Default Pages`) with sub-tabs for Unbound, Welcome, 404, and Suspended pages.
+  - Built-in Code Editor with instant Live Preview modal supporting Desktop, Tablet, and Mobile viewport emulation.
+  - One-click "Reset to Default" button for each page.
+  - Instant synchronization of all 4 templates across all connected servers via agent `/server/pages-sync`.
+
+---
+
 ## [2.9.44] - 2026-10-20
 
 ### Added — Automated DKIM & Multi-Subdomain SSL

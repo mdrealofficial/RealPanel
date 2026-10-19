@@ -101,8 +101,12 @@ Route::middleware([
         Route::get('/system-settings/{category?}', [\App\Http\Controllers\SystemSettingsController::class, 'index'])
             ->where('category', '[a-z_-]+')
             ->name('system-settings.index');
-        // The maxmind-download action must come BEFORE the parameterised update route
-        // so it doesn't get caught as a {category}.
+        // The custom actions must come BEFORE the parameterised update route
+        // so they don't get caught as a {category}.
+        Route::post('/system-settings/pages/preview', [\App\Http\Controllers\SystemSettingsController::class, 'previewPage'])
+            ->name('system-settings.pages.preview');
+        Route::post('/system-settings/pages/reset', [\App\Http\Controllers\SystemSettingsController::class, 'resetPage'])
+            ->name('system-settings.pages.reset');
         Route::post('/system-settings/maxmind-download', [\App\Http\Controllers\SystemSettingsController::class, 'downloadMaxMind'])
             ->name('system-settings.maxmind-download');
         Route::post('/system-settings/{category}', [\App\Http\Controllers\SystemSettingsController::class, 'update'])

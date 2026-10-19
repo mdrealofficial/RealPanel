@@ -152,6 +152,270 @@
                         </div>
                     </form>
 
+                {{-- ── 2b. Default Pages & Error Pages ───────────────────── --}}
+                @elseif($category === 'pages')
+                    <div x-data="{
+                        tab: 'unbound',
+                        previewOpen: false,
+                        previewDevice: 'desktop',
+                        openPreview(pageKey) {
+                            let el = document.getElementById('textarea_' + pageKey);
+                            let val = el ? el.value : '';
+                            let replaced = val
+                                .replaceAll('{domain}', 'example.com')
+                                .replaceAll('{panel_name}', 'RealPanel')
+                                .replaceAll('{hostname}', window.location.hostname)
+                                .replaceAll('{support_url}', '#');
+                            document.getElementById('preview_iframe').srcdoc = replaced;
+                            this.previewOpen = true;
+                        }
+                    }">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-1">{{ __('system-settings.pages_title') }}</h3>
+                                <p class="text-sm text-gray-500">{{ __('system-settings.pages_subtitle') }}</p>
+                            </div>
+                        </div>
+
+                        {{-- Hidden reset forms --}}
+                        <form id="reset_form_unbound" action="{{ route('admin.system-settings.pages.reset') }}" method="POST" class="hidden">
+                            @csrf
+                            <input type="hidden" name="page" value="unbound">
+                        </form>
+                        <form id="reset_form_welcome" action="{{ route('admin.system-settings.pages.reset') }}" method="POST" class="hidden">
+                            @csrf
+                            <input type="hidden" name="page" value="welcome">
+                        </form>
+                        <form id="reset_form_404" action="{{ route('admin.system-settings.pages.reset') }}" method="POST" class="hidden">
+                            @csrf
+                            <input type="hidden" name="page" value="404">
+                        </form>
+                        <form id="reset_form_suspended" action="{{ route('admin.system-settings.pages.reset') }}" method="POST" class="hidden">
+                            @csrf
+                            <input type="hidden" name="page" value="suspended">
+                        </form>
+
+                        {{-- Sub-tab navigation --}}
+                        <div class="border-b border-gray-200 mb-6">
+                            <nav class="flex space-x-2 sm:space-x-4 overflow-x-auto" aria-label="Pages">
+                                <button type="button" @click="tab = 'unbound'"
+                                        :class="tab === 'unbound' ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                        class="flex items-center gap-2 py-3 px-4 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                    {{ __('system-settings.page_tab_unbound') }}
+                                </button>
+                                <button type="button" @click="tab = 'welcome'"
+                                        :class="tab === 'welcome' ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                        class="flex items-center gap-2 py-3 px-4 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    {{ __('system-settings.page_tab_welcome') }}
+                                </button>
+                                <button type="button" @click="tab = '404'"
+                                        :class="tab === '404' ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                        class="flex items-center gap-2 py-3 px-4 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition">
+                                    <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                                    {{ __('system-settings.page_tab_404') }}
+                                </button>
+                                <button type="button" @click="tab = 'suspended'"
+                                        :class="tab === 'suspended' ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                                        class="flex items-center gap-2 py-3 px-4 border-b-2 font-medium text-sm whitespace-nowrap rounded-t-lg transition">
+                                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                    {{ __('system-settings.page_tab_suspended') }}
+                                </button>
+                            </nav>
+                        </div>
+
+                        <form action="{{ route('admin.system-settings.update', ['category' => 'pages']) }}" method="POST">
+                            @csrf
+
+                            {{-- 1. Unbound Domain Page --}}
+                            <div x-show="tab === 'unbound'" class="space-y-4">
+                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <h4 class="text-sm font-semibold text-gray-800">Unbound Domain Page</h4>
+                                            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-mono">/var/www/default/index.html</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">Served when an unassigned domain points to the server IP via DNS.</p>
+                                        <div class="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                                            <span class="font-medium text-gray-700">{{ __('system-settings.available_placeholders') }}:</span>
+                                            <code class="px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px]">{hostname}</code>
+                                            <code class="px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px]">{panel_name}</code>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <button type="button" @click="openPreview('unbound')"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 shadow-sm transition">
+                                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            {{ __('system-settings.live_preview') }}
+                                        </button>
+                                        <button type="button" onclick="if(confirm('Reset Unbound Domain Page to default template?')) document.getElementById('reset_form_unbound').submit();"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 text-gray-500 hover:text-red-600 text-xs font-medium transition">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            {{ __('system-settings.reset_default') }}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <textarea name="page_unbound_html" id="textarea_unbound" rows="18" spellcheck="false"
+                                              class="w-full font-mono text-xs bg-gray-900 text-gray-100 rounded-xl p-4 border border-gray-700 shadow-inner focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 leading-relaxed">{{ old('page_unbound_html', $extra['pages_content']['unbound'] ?? '') }}</textarea>
+                                </div>
+                            </div>
+
+                            {{-- 2. Connected Domain (Welcome Page) --}}
+                            <div x-show="tab === 'welcome'" class="space-y-4">
+                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <h4 class="text-sm font-semibold text-gray-800">Connected Domain Welcome Page</h4>
+                                            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-mono">/var/www/default/welcome.html</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">Template copied to new domains' <code>public_html/index.html</code> upon creation.</p>
+                                        <div class="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                                            <span class="font-medium text-gray-700">{{ __('system-settings.available_placeholders') }}:</span>
+                                            <code class="px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px]">{domain}</code>
+                                            <code class="px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px]">{panel_name}</code>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <button type="button" @click="openPreview('welcome')"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 shadow-sm transition">
+                                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            {{ __('system-settings.live_preview') }}
+                                        </button>
+                                        <button type="button" onclick="if(confirm('Reset Welcome Page to default template?')) document.getElementById('reset_form_welcome').submit();"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 text-gray-500 hover:text-red-600 text-xs font-medium transition">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            {{ __('system-settings.reset_default') }}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <textarea name="page_welcome_html" id="textarea_welcome" rows="18" spellcheck="false"
+                                              class="w-full font-mono text-xs bg-gray-900 text-gray-100 rounded-xl p-4 border border-gray-700 shadow-inner focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 leading-relaxed">{{ old('page_welcome_html', $extra['pages_content']['welcome'] ?? '') }}</textarea>
+                                </div>
+                            </div>
+
+                            {{-- 3. Server 404 Error Page --}}
+                            <div x-show="tab === '404'" class="space-y-4">
+                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <h4 class="text-sm font-semibold text-gray-800">Server 404 Error Page</h4>
+                                            <span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-mono">/var/www/default/404.html</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">Displayed when a requested URL or resource is not found.</p>
+                                        <div class="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                                            <span class="font-medium text-gray-700">{{ __('system-settings.available_placeholders') }}:</span>
+                                            <code class="px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px]">{panel_name}</code>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <button type="button" @click="openPreview('404')"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 shadow-sm transition">
+                                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            {{ __('system-settings.live_preview') }}
+                                        </button>
+                                        <button type="button" onclick="if(confirm('Reset 404 Error Page to default template?')) document.getElementById('reset_form_404').submit();"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 text-gray-500 hover:text-red-600 text-xs font-medium transition">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            {{ __('system-settings.reset_default') }}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <textarea name="page_404_html" id="textarea_404" rows="18" spellcheck="false"
+                                              class="w-full font-mono text-xs bg-gray-900 text-gray-100 rounded-xl p-4 border border-gray-700 shadow-inner focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 leading-relaxed">{{ old('page_404_html', $extra['pages_content']['404'] ?? '') }}</textarea>
+                                </div>
+                            </div>
+
+                            {{-- 4. Stop / Suspended Account Page --}}
+                            <div x-show="tab === 'suspended'" class="space-y-4">
+                                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <h4 class="text-sm font-semibold text-gray-800">Stop / Suspended Account Page</h4>
+                                            <span class="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-mono">/var/www/default/suspended.html</span>
+                                        </div>
+                                        <p class="text-xs text-gray-500">Displayed when an account or domain is suspended or stopped.</p>
+                                        <div class="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                                            <span class="font-medium text-gray-700">{{ __('system-settings.available_placeholders') }}:</span>
+                                            <code class="px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px]">{domain}</code>
+                                            <code class="px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px]">{panel_name}</code>
+                                            <code class="px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px]">{support_url}</code>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <button type="button" @click="openPreview('suspended')"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-50 shadow-sm transition">
+                                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            {{ __('system-settings.live_preview') }}
+                                        </button>
+                                        <button type="button" onclick="if(confirm('Reset Suspended Page to default template?')) document.getElementById('reset_form_suspended').submit();"
+                                                class="inline-flex items-center gap-1 px-3 py-1.5 text-gray-500 hover:text-red-600 text-xs font-medium transition">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                            {{ __('system-settings.reset_default') }}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <textarea name="page_suspended_html" id="textarea_suspended" rows="18" spellcheck="false"
+                                              class="w-full font-mono text-xs bg-gray-900 text-gray-100 rounded-xl p-4 border border-gray-700 shadow-inner focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 leading-relaxed">{{ old('page_suspended_html', $extra['pages_content']['suspended'] ?? '') }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="pt-6 mt-6 border-t border-gray-100 flex items-center justify-between">
+                                <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 shadow-sm transition">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                                    {{ __('system-settings.save_and_sync') }}
+                                </button>
+                                <span class="text-xs text-gray-400">Syncs immediately to Nginx <code>/var/www/default</code> on all connected servers.</span>
+                            </div>
+                        </form>
+
+                        {{-- Live Preview Modal --}}
+                        <div x-show="previewOpen" style="display: none;"
+                             class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div @click.away="previewOpen = false"
+                                 class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-5xl overflow-hidden flex flex-col h-[85vh]">
+                                <div class="px-5 py-3.5 bg-gray-100 border-b border-gray-200 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm font-semibold text-gray-800">Template Live Preview</span>
+                                        <div class="flex items-center bg-gray-200 rounded-lg p-0.5 text-xs">
+                                            <button type="button" @click="previewDevice = 'desktop'"
+                                                    :class="previewDevice === 'desktop' ? 'bg-white shadow-sm font-semibold text-gray-800' : 'text-gray-500 hover:text-gray-700'"
+                                                    class="px-2.5 py-1 rounded-md transition">Desktop</button>
+                                            <button type="button" @click="previewDevice = 'tablet'"
+                                                    :class="previewDevice === 'tablet' ? 'bg-white shadow-sm font-semibold text-gray-800' : 'text-gray-500 hover:text-gray-700'"
+                                                    class="px-2.5 py-1 rounded-md transition">Tablet</button>
+                                            <button type="button" @click="previewDevice = 'mobile'"
+                                                    :class="previewDevice === 'mobile' ? 'bg-white shadow-sm font-semibold text-gray-800' : 'text-gray-500 hover:text-gray-700'"
+                                                    class="px-2.5 py-1 rounded-md transition">Mobile</button>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="previewOpen = false" class="text-gray-400 hover:text-gray-600 transition">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </button>
+                                </div>
+                                <div class="flex-1 bg-gray-900/10 p-4 flex items-center justify-center overflow-auto">
+                                    <div :class="{
+                                        'w-full h-full': previewDevice === 'desktop',
+                                        'w-[768px] h-full shadow-lg rounded-xl overflow-hidden border border-gray-300': previewDevice === 'tablet',
+                                        'w-[375px] h-full shadow-lg rounded-xl overflow-hidden border border-gray-300': previewDevice === 'mobile'
+                                    }" class="bg-white transition-all duration-200">
+                                        <iframe id="preview_iframe" class="w-full h-full border-0" sandbox="allow-same-origin allow-scripts"></iframe>
+                                    </div>
+                                </div>
+                                <div class="px-5 py-3 bg-gray-50 border-t border-gray-200 flex justify-end">
+                                    <button type="button" @click="previewOpen = false"
+                                            class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-300 transition">
+                                        {{ __('system-settings.close_preview') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 {{-- ── 3. Mail ───────────────────────────────────────────── --}}
                 @elseif($category === 'mail')
                     <h3 class="text-lg font-semibold text-gray-800 mb-1">Mail Defaults</h3>
