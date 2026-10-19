@@ -89,6 +89,34 @@ func PanelSetHostnameHandler(w http.ResponseWriter, r *http.Request) {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
+    # Internal subrequest endpoint to verify admin session
+    location = /internal-admin-auth {
+        internal;
+        fastcgi_pass unix:%s;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root/index.php;
+        fastcgi_param QUERY_STRING "";
+        fastcgi_param REQUEST_URI "/admin/terminal/auth-check";
+        fastcgi_param REQUEST_METHOD "GET";
+    }
+
+    # Protected Web Terminal WebSocket proxy (Administrator Only)
+    location ^~ /terminal-root/ {
+        auth_request /internal-admin-auth;
+
+        proxy_pass http://127.0.0.1:7681;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
+    }
+
     location ~ \.php$ {
         fastcgi_pass unix:%s;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
@@ -99,7 +127,7 @@ func PanelSetHostnameHandler(w http.ResponseWriter, r *http.Request) {
         deny all;
     }
 }
-`, hostname, certFile, keyFile, panelDir, fpmSock)
+`, hostname, certFile, keyFile, panelDir, fpmSock, fpmSock)
 
 	vhostPath := "/etc/nginx/sites-available/opterius-panel.conf"
 	if _, err := os.Stat("/etc/nginx/sites-available"); os.IsNotExist(err) {

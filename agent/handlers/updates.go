@@ -91,8 +91,39 @@ func UpdateRunHandler(w http.ResponseWriter, r *http.Request) {
 		writeLog("Artisan Output:\n" + artOut + "\n")
 	}
 
-	// 4. Recompile and update the Go agent binary in the background so the current HTTP connection doesn't terminate prematurely
+	// 4. Ensure ttyd Web Terminal is installed and running
 	go func() {
+		ttydSetupCmd := `
+if [ ! -f /usr/local/bin/ttyd ]; then
+    ARCH=$(uname -m)
+    curl -fsSL "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${ARCH}" -o /usr/local/bin/ttyd 2>/dev/null || \
+    curl -fsSL "https://github.com/tsl0922/ttyd/releases/latest/download/ttyd.${ARCH}" -o /usr/local/bin/ttyd 2>/dev/null
+    chmod +x /usr/local/bin/ttyd
+fi
+
+if [ ! -f /etc/systemd/system/ttyd.service ]; then
+    cat > /etc/systemd/system/ttyd.service << 'EOSERVICE_TTYD'
+[Unit]
+Description=RealPanel Root Web Terminal (ttyd)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+ExecStart=/usr/local/bin/ttyd -i 127.0.0.1 -p 7681 -b /terminal-root -W -t fontSize=14 -t cursorBlink=true -t theme={"background":"#111827"} bash
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOSERVICE_TTYD
+    systemctl daemon-reload
+    systemctl enable --now ttyd.service 2>/dev/null || true
+fi
+`
+		system.ExecCommand("bash", "-c", ttydSetupCmd)
+
 		agentBuildCmd := fmt.Sprintf("cd %s/agent && go build -o /usr/local/bin/opterius-agent . && systemctl restart opterius-agent", panelDir)
 		system.ExecCommand("bash", "-c", agentBuildCmd)
 	}()

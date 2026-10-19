@@ -718,6 +718,44 @@ chmod +x /usr/local/bin/wp
 ok "WP-CLI installed"
 
 # ============================================================
+# Step 7d: Install Web Terminal (ttyd) for Administrator
+# ============================================================
+info "Installing ttyd Web Terminal..."
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64)  TTYD_ARCH="x86_64" ;;
+    aarch64) TTYD_ARCH="aarch64" ;;
+    armv7l)  TTYD_ARCH="armhf" ;;
+    *)       TTYD_ARCH="x86_64" ;;
+esac
+
+curl -fsSL "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${TTYD_ARCH}" -o /usr/local/bin/ttyd 2>/dev/null || \
+curl -fsSL "https://github.com/tsl0922/ttyd/releases/latest/download/ttyd.${TTYD_ARCH}" -o /usr/local/bin/ttyd 2>/dev/null
+chmod +x /usr/local/bin/ttyd
+
+# Create systemd service for ttyd bound strictly to localhost (port 7681)
+cat > /etc/systemd/system/ttyd.service << 'EOSERVICE_TTYD'
+[Unit]
+Description=RealPanel Root Web Terminal (ttyd)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+ExecStart=/usr/local/bin/ttyd -i 127.0.0.1 -p 7681 -b /terminal-root -W -t fontSize=14 -t cursorBlink=true -t theme={"background":"#111827"} bash
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOSERVICE_TTYD
+
+systemctl daemon-reload
+systemctl enable --now ttyd.service 2>/dev/null || true
+ok "ttyd Web Terminal installed and service configured"
+
+# ============================================================
 # Step 8: Install Node.js (for Vite/Tailwind build)
 # ============================================================
 info "Installing Node.js..."
@@ -957,6 +995,34 @@ server {
 
     location / {
         try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    # Internal subrequest endpoint to verify admin session
+    location = /internal-admin-auth {
+        internal;
+        fastcgi_pass unix:${FPM_SOCK};
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root/index.php;
+        fastcgi_param QUERY_STRING "";
+        fastcgi_param REQUEST_URI "/admin/terminal/auth-check";
+        fastcgi_param REQUEST_METHOD "GET";
+    }
+
+    # Protected Web Terminal WebSocket proxy (Administrator Only)
+    location ^~ /terminal-root/ {
+        auth_request /internal-admin-auth;
+
+        proxy_pass http://127.0.0.1:7681;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+
+        proxy_read_timeout 86400s;
+        proxy_send_timeout 86400s;
     }
 
     location ~ \.php\$ {

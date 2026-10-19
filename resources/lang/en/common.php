@@ -83,6 +83,7 @@ return [
     'license'               => 'License',
     'updates'               => 'Updates',
     'file_manager'          => 'File Manager',
+    'terminal'              => 'Terminal',
     'web_terminal'          => 'Web Terminal',
     'forwarders'            => 'Forwarders',
     'autoresponders'        => 'Autoresponders',

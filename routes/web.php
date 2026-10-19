@@ -177,6 +177,10 @@ Route::middleware([
         Route::post('/updates/mail', [UpdateController::class, 'forceMailUpdate'])->name('updates.mail');
         Route::get('/updates/log', [UpdateController::class, 'log'])->name('updates.log');
 
+        // Root Web Terminal (Administrator Only)
+        Route::get('/terminal', [\App\Http\Controllers\AdminTerminalController::class, 'index'])->name('terminal.index');
+        Route::get('/terminal/auth-check', [\App\Http\Controllers\AdminTerminalController::class, 'checkAuth'])->name('terminal.auth');
+
         // Panel Hostname (one-click switch from IP to subdomain + Let's Encrypt)
         Route::get('/panel-hostname', [\App\Http\Controllers\PanelHostnameController::class, 'index'])->name('panel-hostname.index');
         Route::post('/panel-hostname', [\App\Http\Controllers\PanelHostnameController::class, 'update'])->name('panel-hostname.update');
