@@ -10,24 +10,26 @@
         <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{{ session('error') }}</div>
     @endif
 
-    <!-- Account Selector -->
-    <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-        <div class="px-6 py-5">
-            <form method="GET" action="{{ route('user.ftp.index') }}" class="flex items-end gap-4">
-                <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ __('cron.account') }}</label>
-                    <select name="account_id" class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        @foreach($accounts as $account)
-                            <option value="{{ $account->id }}" @selected($selectedAccount && $selectedAccount->id === $account->id)>
-                                {{ $account->username }} ({{ $account->server->name }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">{{ __('common.manage') }}</button>
-            </form>
+    <!-- Account Selector (only when user has multiple accounts) -->
+    @if($accounts->count() > 1)
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+            <div class="px-6 py-5">
+                <form method="GET" action="{{ route('user.ftp.index') }}" class="flex items-end gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ __('cron.account') }}</label>
+                        <select name="account_id" class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @foreach($accounts as $account)
+                                <option value="{{ $account->id }}" @selected($selectedAccount && $selectedAccount->id === $account->id)>
+                                    {{ $account->username }} ({{ $account->server->name }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">{{ __('common.manage') }}</button>
+                </form>
+            </div>
         </div>
-    </div>
+    @endif
 
     @if($selectedAccount)
         <!-- Create FTP Account -->

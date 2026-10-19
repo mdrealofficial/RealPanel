@@ -10,6 +10,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.48] - 2026-10-20
+
+### Improved & Added — User Experience Streamlining & Add Domain Option
+- **Account & Server Selection Elimination**: In user hosting mode, automatically scope and default File Manager (`/file-manager`), FTP accounts (`/ftp`), MySQL creation (`/databases/create`), PostgreSQL creation (`/postgres/create`), Cron jobs (`/cronjobs/create`), and Domain creation (`/domains/create`) to the active account session. Eliminated redundant "Select Account" and server/IP dropdown screens when a user is already working within their active account.
+- **Add Domain Option & Navigation**: Restored the full "Add Domain" capability:
+  - Added **Domains** (`user.domains.index`) directly to the user sidebar under the **DOMAIN** section.
+  - Added an **Add Domain** action button to the Domains index page header and empty state linking to `user.domains.create`.
+  - Implemented `create()` and `store()` methods in `DomainController.php` with validation, agent Nginx vhost provisioning, automated DNS zone setup with default template / nameservers, and auto SSL issuance.
+
+---
+
 ## [2.9.47] - 2026-10-20
 
 ### Fixed & Added — Complete RealPanel Backup Subsystem & Safeguards

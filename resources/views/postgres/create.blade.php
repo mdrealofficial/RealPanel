@@ -21,17 +21,21 @@
         <div class="max-w-xl space-y-6">
 
             <div class="bg-white rounded-xl shadow-sm p-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Account</label>
-                    <select name="account_id"
-                        class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                        @foreach($accounts as $account)
-                            <option value="{{ $account->id }}" @selected(old('account_id') == $account->id)>
-                                {{ $account->username }} ({{ $account->server->name }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                @if($accounts->count() > 1)
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Account</label>
+                        <select name="account_id"
+                            class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                            @foreach($accounts as $account)
+                                <option value="{{ $account->id }}" @selected(old('account_id') == $account->id)>
+                                    {{ $account->username }} ({{ $account->server->name }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                @else
+                    <input type="hidden" name="account_id" value="{{ $accounts->first()?->id }}">
+                @endif
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">Database Name</label>
                     <input type="text" name="db_name" value="{{ old('db_name') }}"

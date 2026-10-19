@@ -43,32 +43,36 @@
             <div class="max-w-2xl space-y-6">
 
                 {{-- Account --}}
-                <div class="bg-white rounded-xl shadow-sm overflow-hidden">
-                    <div class="px-6 py-5 border-b border-gray-100">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                                <span class="text-sm font-bold text-indigo-600">1</span>
-                            </div>
-                            <div>
-                                <h3 class="text-base font-semibold text-gray-800">{{ __('cron.account') }}</h3>
-                                <p class="text-sm text-gray-500">{{ __('cron.account_hint') }}</p>
+                @if($accounts->count() > 1)
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <div class="px-6 py-5 border-b border-gray-100">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                    <span class="text-sm font-bold text-indigo-600">1</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-semibold text-gray-800">{{ __('cron.account') }}</h3>
+                                    <p class="text-sm text-gray-500">{{ __('cron.account_hint') }}</p>
+                                </div>
                             </div>
                         </div>
+                        <div class="px-6 py-5">
+                            <select name="account_id"
+                                class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                @foreach($accounts as $account)
+                                    <option value="{{ $account->id }}" @selected(old('account_id') == $account->id)>
+                                        {{ $account->username }} ({{ $account->server->name }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('account_id')
+                                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
-                    <div class="px-6 py-5">
-                        <select name="account_id"
-                            class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                            @foreach($accounts as $account)
-                                <option value="{{ $account->id }}" @selected(old('account_id') == $account->id)>
-                                    {{ $account->username }} ({{ $account->server->name }})
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('account_id')
-                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
+                @else
+                    <input type="hidden" name="account_id" value="{{ $accounts->first()->id }}">
+                @endif
 
                 {{-- Schedule --}}
                 <div class="bg-white rounded-xl shadow-sm overflow-hidden">

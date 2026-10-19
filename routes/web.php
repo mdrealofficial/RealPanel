@@ -316,8 +316,8 @@ Route::middleware([
         Route::post('/git/clone', [GitController::class, 'clone'])->name('git.clone');
         Route::post('/git/pull', [GitController::class, 'pull'])->name('git.pull');
 
-        // Domains (create/store removed — domain is created with the account)
-        Route::resource('domains', DomainController::class)->only(['index', 'destroy']);
+        // Domains
+        Route::resource('domains', DomainController::class)->only(['index', 'create', 'store', 'destroy']);
         Route::post('/domains/{domain}/catchall', [DomainController::class, 'toggleCatchall'])->name('domains.catchall');
         Route::post('/domains/{domain}/toggle-htaccess', [HtaccessController::class, 'toggle'])->name('domains.toggle-htaccess');
         Route::get('/htaccess', [HtaccessController::class, 'index'])->name('htaccess.index');

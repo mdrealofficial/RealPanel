@@ -38,6 +38,96 @@ class DomainController extends Controller
         return view('domains.index', compact('domains'));
     }
 
+    public function create()
+    {
+        $accounts = auth()->user()->scopedToCurrent()
+            ->with('server')
+            ->get();
+
+        return view('domains.create', compact('accounts'));
+    }
+
+    public function store(Request $request)
+    {
+        $phpVersions = config('realpanel.php_versions') ?? ['8.1', '8.2', '8.3', '8.4'];
+
+        $validated = $request->validate([
+            'account_id'  => 'required|exists:accounts,id',
+            'domain'      => 'required|string|max:255|unique:domains,domain',
+            'php_version' => 'required|string|in:' . implode(',', $phpVersions),
+        ]);
+
+        $account = auth()->user()->scopedToCurrent()
+            ->with(['server', 'package'])
+            ->findOrFail($validated['account_id']);
+
+        if (!$account->userCan(auth()->user(), 'settings')) {
+            abort(403, 'Unauthorized.');
+        }
+
+        $server = $account->server;
+        $documentRoot = $account->home_directory . '/' . $validated['domain'] . '/public_html';
+
+        $domain = Domain::create([
+            'server_id'     => $server->id,
+            'account_id'    => $account->id,
+            'domain'        => $validated['domain'],
+            'document_root' => $documentRoot,
+            'php_version'   => $validated['php_version'],
+            'status'        => 'pending',
+        ]);
+
+        // Tell the agent to create the domain on the server
+        $response = AgentService::for($server)->post('/domains/create', [
+            'domain'        => $domain->domain,
+            'document_root' => $domain->document_root,
+            'username'      => $account->username,
+            'php_version'   => $domain->php_version,
+        ]);
+
+        if ($response && $response->successful()) {
+            $domain->update(['status' => 'active']);
+
+            // Auto-create DNS zone using assigned package template or default template
+            $dnsTemplate = null;
+            if ($account->package && $account->package->dns_template_id) {
+                $dnsTemplate = \App\Models\DnsTemplate::find($account->package->dns_template_id);
+            }
+            if (!$dnsTemplate) {
+                $dnsTemplate = \App\Models\DnsTemplate::where('is_default', true)->first();
+            }
+
+            $resolvedRecords = $dnsTemplate ? $dnsTemplate->resolveRecords($domain->domain, $server->ip_address) : [];
+
+            AgentService::for($server)->post('/dns/create-zone', [
+                'domain'    => $domain->domain,
+                'server_ip' => $server->ip_address,
+                'ns1'       => \App\Models\Setting::getNs1($domain->domain),
+                'ns2'       => \App\Models\Setting::getNs2($domain->domain),
+                'records'   => $resolvedRecords,
+            ]);
+
+            // Auto-issue SSL certificate
+            \App\Http\Controllers\SslController::autoIssue($domain);
+
+            ActivityLogger::log(
+                'domain.created',
+                'domain',
+                $domain->id,
+                $domain->domain,
+                "Added domain {$domain->domain} to account {$account->username}",
+                ['account_id' => $account->id, 'server_id' => $server->id]
+            );
+
+            return redirect()->route('user.domains.index')->with('success', __('domains.domain_created', ['domain' => $domain->domain]));
+        }
+
+        $error = $response ? $response->json('error', 'Unknown error') : 'Could not connect to server agent';
+        $domain->update(['status' => 'error']);
+
+        return redirect()->route('user.domains.index')->with('warning', 'Domain saved but agent setup failed: ' . $error);
+    }
+
     public function destroy(Request $request, Domain $domain)
     {
         $domain->load('account');

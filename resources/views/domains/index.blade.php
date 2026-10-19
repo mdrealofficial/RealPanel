@@ -1,6 +1,12 @@
 <x-user-layout>
     <x-slot name="header">
-        <h2 class="text-lg font-semibold text-gray-800">{{ __('domains.domains') }}</h2>
+        <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-800">{{ __('domains.domains') }}</h2>
+            <a href="{{ route('user.domains.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                {{ __('domains.add_domain') }}
+            </a>
+        </div>
     </x-slot>
 
     @if(session('success'))
@@ -21,16 +27,17 @@
         </div>
     @endif
 
-    <!-- Header -->
-    <div class="mb-6">
-        <p class="text-sm text-gray-500">{{ __('domains.each_account_one_main_domain') }}</p>
-    </div>
-
     @if($domains->isEmpty())
         <div class="bg-white rounded-xl shadow-sm px-6 py-16 text-center">
             <svg class="mx-auto w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
             <h3 class="mt-4 text-base font-medium text-gray-700">{{ __('domains.no_domains_yet') }}</h3>
-            <p class="mt-2 text-sm text-gray-500">{{ __('domains.domains_created_when_account') }}</p>
+            <p class="mt-2 text-sm text-gray-500">Get started by adding your first domain.</p>
+            <div class="mt-6">
+                <a href="{{ route('user.domains.create') }}" class="inline-flex items-center px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                    {{ __('domains.add_domain') }}
+                </a>
+            </div>
         </div>
     @else
         <div class="space-y-5">

@@ -15,7 +15,7 @@
         </div>
     @endif
 
-    <!-- Account Selector -->
+    <!-- Account Selector (only shown if no account was resolvable) -->
     @if(!$selectedAccount)
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
             <div class="px-6 py-5 border-b border-gray-100">

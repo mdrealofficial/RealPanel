@@ -21,8 +21,14 @@ class FtpController extends Controller
         if ($request->has('account_id')) {
             $selectedAccount = auth()->user()->scopedToCurrent()
                 ->with('server')
-                ->findOrFail($request->account_id);
+                ->find($request->account_id);
+        }
 
+        if (!$selectedAccount) {
+            $selectedAccount = auth()->user()->currentAccount() ?? $accounts->first();
+        }
+
+        if ($selectedAccount) {
             $response = AgentService::for($selectedAccount->server)->post('/ftp/list', [
                 'sys_user' => $selectedAccount->username,
             ]);
