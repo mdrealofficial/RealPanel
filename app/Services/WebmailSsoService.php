@@ -40,8 +40,10 @@ class WebmailSsoService
                 // If webmail returned an internal URL (e.g. http://127.0.0.1:8090/sso/login?... or localhost:8090),
                 // rewrite the host to the client's current request host so their browser can reach it.
                 $clientHost = request()->getHost();
+                $scheme = request()->getScheme(); // 'http' or 'https'
                 if ($clientHost && !in_array($clientHost, ['127.0.0.1', 'localhost'])) {
-                    $issuedUrl = preg_replace('#^(https?://)(127\.0\.0\.1|localhost)(:8090.*)$#', '$1' . $clientHost . '$3', $issuedUrl);
+                    // Match the scheme of the current panel request (e.g. https:// if panel is on https)
+                    $issuedUrl = preg_replace('#^https?://(127\.0\.0\.1|localhost)(:8090.*)$#', $scheme . '://' . $clientHost . '$2', $issuedUrl);
                 }
                 return $issuedUrl;
             }

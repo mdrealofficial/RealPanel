@@ -118,6 +118,76 @@ func PanelSetHostnameHandler(w http.ResponseWriter, r *http.Request) {
 		system.ExecCommand("ln", "-sf", vhostPath, "/etc/nginx/sites-enabled/opterius-panel.conf")
 	}
 
+	// Configure SSL for Opterius Mail webmail on port 8090
+	mailVhost := fmt.Sprintf(`server {
+    listen 8090 ssl http2;
+    listen [::]:8090 ssl http2;
+    server_name _;
+
+    ssl_certificate %s;
+    ssl_certificate_key %s;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    root /opt/opterius-mail/public;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:%s;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(ht|git|svn) {
+        deny all;
+    }
+}
+`, certFile, keyFile, fpmSock)
+	mailConfPath := "/etc/nginx/sites-available/opterius-mail.conf"
+	if _, err := os.Stat("/etc/nginx/sites-available"); os.IsNotExist(err) {
+		mailConfPath = "/etc/nginx/conf.d/opterius-mail.conf"
+	}
+	os.WriteFile(mailConfPath, []byte(mailVhost), 0644)
+
+	// Configure SSL for phpMyAdmin on port 8081
+	pmaVhost := fmt.Sprintf(`server {
+    listen 8081 ssl http2;
+    listen [::]:8081 ssl http2;
+    server_name _;
+
+    ssl_certificate %s;
+    ssl_certificate_key %s;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    root /usr/share/phpmyadmin;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:%s;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+`, certFile, keyFile, fpmSock)
+	pmaConfPath := "/etc/nginx/sites-available/phpmyadmin.conf"
+	if _, err := os.Stat("/etc/nginx/sites-available"); os.IsNotExist(err) {
+		pmaConfPath = "/etc/nginx/conf.d/phpmyadmin.conf"
+	}
+	os.WriteFile(pmaConfPath, []byte(pmaVhost), 0644)
+
 	// Test and reload nginx
 	if testOut, testErr := system.ExecCommand("nginx", "-t"); testErr != nil {
 		system.RespondJSON(w, http.StatusInternalServerError, map[string]string{
