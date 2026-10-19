@@ -45,11 +45,18 @@ class SetupController extends Controller
             'role'     => 'admin',
         ]);
 
+        // Ensure pre-built DNS templates exist
+        if (\App\Models\DnsTemplate::count() === 0) {
+            (new \Database\Seeders\DnsTemplateSeeder())->run();
+        }
+        $defaultDnsTemplate = \App\Models\DnsTemplate::where('is_default', true)->first();
+
         // Create default package if none exists
         if (Package::count() === 0) {
             Package::create([
                 'name'                => 'Default',
                 'description'         => 'Default hosting package',
+                'dns_template_id'     => $defaultDnsTemplate?->id,
                 'php_versions'        => config('realpanel.php_versions'),
                 'default_php_version' => config('realpanel.default_php_version'),
                 'disk_quota'          => 0,

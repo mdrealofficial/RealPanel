@@ -81,12 +81,23 @@ class ProvisioningService
 
             // Skip DNS/SSL if this is a migration (they'll be imported separately)
             if (!($params['skip_auto_setup'] ?? false)) {
-                // Auto-create DNS zone
+                // Auto-create DNS zone using assigned or default template
+                $dnsTemplate = null;
+                if ($account->package && $account->package->dns_template_id) {
+                    $dnsTemplate = \App\Models\DnsTemplate::find($account->package->dns_template_id);
+                }
+                if (!$dnsTemplate) {
+                    $dnsTemplate = \App\Models\DnsTemplate::where('is_default', true)->first();
+                }
+
+                $resolvedRecords = $dnsTemplate ? $dnsTemplate->resolveRecords($domain->domain, $server->ip_address) : [];
+
                 AgentService::for($server)->post('/dns/create-zone', [
                     'domain'    => $domain->domain,
                     'server_ip' => $server->ip_address,
                     'ns1'       => config('realpanel.ns1', 'ns1.' . $domain->domain),
                     'ns2'       => config('realpanel.ns2', 'ns2.' . $domain->domain),
+                    'records'   => $resolvedRecords,
                 ]);
 
                 // Auto SSL

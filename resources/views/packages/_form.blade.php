@@ -272,6 +272,39 @@
             </div>
         </div>
 
+        {{-- DNS Template --}}
+        @php
+            $dnsTemplates = \App\Models\DnsTemplate::orderByDesc('is_default')->orderBy('name')->get();
+        @endphp
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-gray-100">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <span class="text-sm font-bold text-indigo-600">6</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-800">DNS Template</h3>
+                        <p class="text-sm text-gray-500">Initial zone records created for domains in this package</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div>
+                    <label for="dns_template_id" class="block text-sm font-medium text-gray-700 mb-1.5">Default Zone Template</label>
+                    <select name="dns_template_id" id="dns_template_id"
+                            class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="">System Default Template</option>
+                        @foreach($dnsTemplates as $tpl)
+                            <option value="{{ $tpl->id }}" @selected(old('dns_template_id', $package?->dns_template_id) == $tpl->id)>
+                                {{ $tpl->name }} {{ $tpl->is_default ? '(Global Default)' : '' }} ({{ count($tpl->records ?? []) }} records)
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1.5 text-xs text-gray-500">Domains provisioned under this package will automatically use this DNS zone template.</p>
+                </div>
+            </div>
+        </div>
+
         {{-- Actions --}}
         <div class="flex items-center space-x-3">
             <button type="submit"

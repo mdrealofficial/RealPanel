@@ -10,6 +10,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.41] - 2026-10-20
+
+### Added — Pre-Built DNS Templates
+- **Built-in DNS Templates**: Six pre-configured, production-ready DNS templates automatically seeded on clean installs and database migrations:
+  1. **Standard (Web & Mail)** (Default): Full web hosting with mail, webmail, cpanel, FTP, SPF, and DMARC.
+  2. **Google Workspace (Gmail)**: Optimized for sites utilizing Google Workspace with standard MX records, SPF, and DMARC.
+  3. **Microsoft 365 (Office 365)**: Complete Office 365 MX, Autodiscover CNAME, and SPF records.
+  4. **Cloudflare & CDN Ready**: Direct origin host bypass (`direct.domain`) for SSH/FTP and DNS-only mail handling.
+  5. **Web Only (No Local Mail)**: Lightweight profile with restrictive SPF (`-all`) for web-only / API workloads.
+  6. **Zoho Mail**: Pre-configured Zoho MX, SPF, and DMARC.
+- **Package Integration**: Hosting packages can now optionally specify a default DNS template for all provisioned domains.
+- **Agent Zone Population**: The Go agent `/dns/create-zone` handler now supports bulk population of custom DNS template records into PowerDNS.
+
 ---
 
 ## [2.9.40] - 2026-10-20

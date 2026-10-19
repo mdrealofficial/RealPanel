@@ -26,6 +26,7 @@ class Package extends Model
         'php_switch_enabled',
         'cdn_enabled',
         'is_default',
+        'dns_template_id',
     ];
 
     protected $casts = [
@@ -36,6 +37,11 @@ class Package extends Model
         'cdn_enabled' => 'boolean',
         'is_default' => 'boolean',
     ];
+
+    public function dnsTemplate(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(DnsTemplate::class, 'dns_template_id');
+    }
 
     public function allowsPhpVersion(string $version): bool
     {

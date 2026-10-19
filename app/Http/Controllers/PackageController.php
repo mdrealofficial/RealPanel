@@ -53,6 +53,7 @@ class PackageController extends Controller
             'cron_jobs_enabled'   => 'boolean',
             'php_switch_enabled'  => 'boolean',
             'is_default'          => 'boolean',
+            'dns_template_id'     => 'nullable|exists:dns_templates,id',
         ]);
 
         if (!in_array($validated['default_php_version'], $validated['php_versions'])) {
@@ -63,6 +64,7 @@ class PackageController extends Controller
         $validated['cron_jobs_enabled'] = $request->boolean('cron_jobs_enabled');
         $validated['php_switch_enabled'] = $request->boolean('php_switch_enabled');
         $validated['is_default'] = $request->boolean('is_default');
+        $validated['dns_template_id'] = $request->input('dns_template_id') ?: null;
 
         if ($validated['is_default']) {
             Package::query()->update(['is_default' => false]);
@@ -101,6 +103,7 @@ class PackageController extends Controller
             'cron_jobs_enabled'   => 'boolean',
             'php_switch_enabled'  => 'boolean',
             'is_default'          => 'boolean',
+            'dns_template_id'     => 'nullable|exists:dns_templates,id',
         ]);
 
         if (!in_array($validated['default_php_version'], $validated['php_versions'])) {
@@ -111,6 +114,7 @@ class PackageController extends Controller
         $validated['cron_jobs_enabled'] = $request->boolean('cron_jobs_enabled');
         $validated['php_switch_enabled'] = $request->boolean('php_switch_enabled');
         $validated['is_default'] = $request->boolean('is_default');
+        $validated['dns_template_id'] = $request->input('dns_template_id') ?: null;
 
         if ($validated['is_default']) {
             Package::where('id', '!=', $package->id)->update(['is_default' => false]);

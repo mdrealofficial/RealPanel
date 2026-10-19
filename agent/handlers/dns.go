@@ -11,10 +11,11 @@ import (
 )
 
 type DnsCreateZoneReq struct {
-	Domain   string `json:"domain"`
-	ServerIP string `json:"server_ip"`
-	NS1      string `json:"ns1"`
-	NS2      string `json:"ns2"`
+	Domain   string      `json:"domain"`
+	ServerIP string      `json:"server_ip"`
+	NS1      string      `json:"ns1"`
+	NS2      string      `json:"ns2"`
+	Records  []DnsRecord `json:"records"`
 }
 
 type DnsListRecordsReq struct {
@@ -68,21 +69,40 @@ func DnsCreateZoneHandler(w http.ResponseWriter, r *http.Request) {
 	domainIdStr := strings.TrimSpace(out)
 
 	if domainIdStr != "" {
-		// Default SOA, NS, and A records
+		// Ensure SOA record always exists
 		soa := fmt.Sprintf("%s hostmaster.%s 1 10800 3600 604800 3600", req.NS1, req.Domain)
-		recordsQuery := fmt.Sprintf(`
-INSERT IGNORE INTO pdns.records (domain_id, name, type, content, ttl) VALUES (%s, '%s', 'SOA', '%s', 3600);
+		system.ExecCommand("mysql", "-e", fmt.Sprintf("INSERT IGNORE INTO pdns.records (domain_id, name, type, content, ttl) VALUES (%s, '%s', 'SOA', '%s', 3600);", domainIdStr, req.Domain, soa))
+
+		if len(req.Records) > 0 {
+			for _, rec := range req.Records {
+				if rec.Name == "" || rec.Type == "" || rec.Content == "" {
+					continue
+				}
+				ttl := rec.TTL
+				if ttl <= 0 {
+					ttl = 3600
+				}
+				escapedContent := strings.ReplaceAll(rec.Content, "'", "\\'")
+				escapedName := strings.ReplaceAll(rec.Name, "'", "\\'")
+				recQuery := fmt.Sprintf("INSERT IGNORE INTO pdns.records (domain_id, name, type, content, ttl, prio) VALUES (%s, '%s', '%s', '%s', %d, %d);",
+					domainIdStr, escapedName, rec.Type, escapedContent, ttl, rec.Priority)
+				system.ExecCommand("mysql", "-e", recQuery)
+			}
+		} else {
+			// Default NS and A records if no custom template records provided
+			recordsQuery := fmt.Sprintf(`
 INSERT IGNORE INTO pdns.records (domain_id, name, type, content, ttl) VALUES (%s, '%s', 'NS', '%s', 3600);
 INSERT IGNORE INTO pdns.records (domain_id, name, type, content, ttl) VALUES (%s, '%s', 'NS', '%s', 3600);
 INSERT IGNORE INTO pdns.records (domain_id, name, type, content, ttl) VALUES (%s, '%s', 'A', '%s', 3600);
 INSERT IGNORE INTO pdns.records (domain_id, name, type, content, ttl) VALUES (%s, 'www.%s', 'A', '%s', 3600);
-`, domainIdStr, req.Domain, soa,
-			domainIdStr, req.Domain, req.NS1,
-			domainIdStr, req.Domain, req.NS2,
-			domainIdStr, req.Domain, req.ServerIP,
-			domainIdStr, req.Domain, req.ServerIP)
+`,
+				domainIdStr, req.Domain, req.NS1,
+				domainIdStr, req.Domain, req.NS2,
+				domainIdStr, req.Domain, req.ServerIP,
+				domainIdStr, req.Domain, req.ServerIP)
 
-		system.ExecCommand("mysql", "-e", recordsQuery)
+			system.ExecCommand("mysql", "-e", recordsQuery)
+		}
 	}
 
 	system.RespondJSON(w, http.StatusOK, map[string]interface{}{
