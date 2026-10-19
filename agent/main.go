@@ -58,6 +58,7 @@ func main() {
 	mux.HandleFunc("/ssl/issue-async", handlers.SslIssueAsyncHandler)
 	mux.HandleFunc("/ssl/upload", handlers.SslUploadHandler)
 	mux.HandleFunc("/ssl/progress", handlers.SslProgressHandler)
+	mux.HandleFunc("/panel/set-hostname", handlers.PanelSetHostnameHandler)
 
 	// 6. DNS (PowerDNS)
 	mux.HandleFunc("/dns/create-zone", handlers.DnsCreateZoneHandler)
