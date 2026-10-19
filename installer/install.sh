@@ -871,6 +871,67 @@ if [[ -f "/etc/letsencrypt/live/${PANEL_HOSTNAME}/fullchain.pem" ]]; then
     ssl_certificate_key /etc/letsencrypt/live/${PANEL_HOSTNAME}/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;"
     PANEL_SCHEME="https"
+
+    # Also enable SSL on Webmail (port 8090) and phpMyAdmin (port 8081)
+    cat > ${MAIL_VHOST} <<EONGINX_MAIL_SSL
+server {
+    listen 8090 ssl;
+    listen [::]:8090 ssl;
+    server_name _;
+
+    ssl_certificate     /etc/letsencrypt/live/${PANEL_HOSTNAME}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${PANEL_HOSTNAME}/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    root ${MAIL_DIR}/public;
+    index index.php;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php\$ {
+        fastcgi_pass unix:${MAIL_FPM_SOCK};
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(ht|git|svn) {
+        deny all;
+    }
+}
+EONGINX_MAIL_SSL
+
+    cat > ${PMA_VHOST} <<EONGINX_PMA_SSL
+server {
+    listen 8081 ssl;
+    listen [::]:8081 ssl;
+    server_name _;
+
+    ssl_certificate     /etc/letsencrypt/live/${PANEL_HOSTNAME}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${PANEL_HOSTNAME}/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    root ${PMA_DIR};
+    index index.php;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php\$ {
+        fastcgi_pass unix:${RC_FPM_SOCK};
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(ht|git|svn) {
+        deny all;
+    }
+}
+EONGINX_PMA_SSL
 else
     PANEL_SSL_BLOCK="
     listen ${PANEL_PORT};
