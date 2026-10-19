@@ -105,6 +105,10 @@ func main() {
 	mux.HandleFunc("/node/app-delete", handlers.NodeAppDeleteHandler)
 	mux.HandleFunc("/node/app-logs", handlers.NodeAppLogsHandler)
 
+	// 11. System Services Management
+	mux.HandleFunc("/services/list", handlers.ServicesListHandler)
+	mux.HandleFunc("/services/action", handlers.ServiceActionHandler)
+
 	// Default fallback handler for any remaining endpoints
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[INFO] Agent received request: %s %s", r.Method, r.URL.Path)
