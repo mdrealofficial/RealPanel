@@ -36,7 +36,14 @@ class WebmailSsoService
                 ]);
 
             if ($response->successful()) {
-                return $response->json('url');
+                $issuedUrl = (string) $response->json('url');
+                // If webmail returned an internal URL (e.g. http://127.0.0.1:8090/sso/login?... or localhost:8090),
+                // rewrite the host to the client's current request host so their browser can reach it.
+                $clientHost = request()->getHost();
+                if ($clientHost && !in_array($clientHost, ['127.0.0.1', 'localhost'])) {
+                    $issuedUrl = preg_replace('#^(https?://)(127\.0\.0\.1|localhost)(:8090.*)$#', '$1' . $clientHost . '$3', $issuedUrl);
+                }
+                return $issuedUrl;
             }
 
             Log::warning('Webmail SSO issue failed', [

@@ -989,10 +989,13 @@ if command -v ufw &>/dev/null; then
     ufw allow 53/udp >/dev/null 2>&1
     ufw allow 8080/tcp >/dev/null 2>&1
     ufw allow 8081/tcp >/dev/null 2>&1
+    ufw allow 8090/tcp >/dev/null 2>&1
     ufw --force enable >/dev/null 2>&1
     ok "UFW configured"
 elif command -v firewall-cmd &>/dev/null; then
     firewall-cmd --permanent --add-port=${PANEL_PORT}/tcp >/dev/null 2>&1
+    firewall-cmd --permanent --add-port=8090/tcp >/dev/null 2>&1
+    firewall-cmd --permanent --add-port=8081/tcp >/dev/null 2>&1
     firewall-cmd --permanent --add-service=http >/dev/null 2>&1
     firewall-cmd --permanent --add-service=https >/dev/null 2>&1
     firewall-cmd --permanent --add-service=smtp >/dev/null 2>&1
