@@ -102,7 +102,7 @@ func PanelSetHostnameHandler(w http.ResponseWriter, r *http.Request) {
 `, hostname, certFile, keyFile, panelDir, fpmSock)
 
 	vhostPath := "/etc/nginx/sites-available/opterius-panel.conf"
-	if _, err := os.Stat("/etc/nginx/conf.d"); err == nil && os.IsNotExist(statErr) {
+	if _, err := os.Stat("/etc/nginx/sites-available"); os.IsNotExist(err) {
 		vhostPath = "/etc/nginx/conf.d/opterius-panel.conf"
 	}
 
