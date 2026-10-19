@@ -10,6 +10,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.43] - 2026-10-20
+
+### Added — Configurable Default Nameservers
+- **System Settings Option**: Added administrator controls under **System Settings → Domains & DNS** for setting panel-wide default nameservers:
+  - **Primary Nameserver (NS1)** (e.g. `ns1.yourdomain.com`)
+  - **Secondary Nameserver (NS2)** (e.g. `ns2.yourdomain.com`)
+- **Dynamic Template Resolution**: `DnsTemplate::resolveRecords()` dynamically resolves `{ns1}` and `{ns2}` using administrator settings, with automatic fallback to `config('realpanel.ns1')` / `config('realpanel.ns2')` or domain-relative nameservers.
+- **PowerDNS Integration**: Account provisioning, alias domain creation, and DNS zone setup automatically configure SOA and NS records with the administrator-configured nameservers.
+
+---
+
 ## [2.9.41] - 2026-10-20
 
 ### Added — Pre-Built DNS Templates

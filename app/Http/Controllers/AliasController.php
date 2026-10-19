@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Domain;
 use App\Models\DomainAlias;
+use App\Models\Setting;
 use App\Services\AgentService;
 use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
@@ -54,8 +55,8 @@ class AliasController extends Controller
             AgentService::for($domain->account->server)->post('/dns/create-zone', [
                 'domain'    => $validated['alias_domain'],
                 'server_ip' => $domain->account->server->ip_address,
-                'ns1'       => config('realpanel.ns1'),
-                'ns2'       => config('realpanel.ns2'),
+                'ns1'       => Setting::getNs1($validated['alias_domain']),
+                'ns2'       => Setting::getNs2($validated['alias_domain']),
             ]);
 
             ActivityLogger::log('alias.created', 'domain', $domain->id, $validated['alias_domain'],

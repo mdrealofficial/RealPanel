@@ -32,4 +32,30 @@ class Setting extends Model
             ->pluck('value', 'key')
             ->toArray();
     }
+
+    /**
+     * Get the default primary nameserver (NS1), dynamically replacing {domain} if provided.
+     */
+    public static function getNs1(?string $domain = null): string
+    {
+        $val = trim((string) (static::get('default_ns1') ?: static::get('ns1')));
+        if ($val !== '') {
+            $val = rtrim($val, '.');
+            return $domain ? str_replace('{domain}', $domain, $val) : $val;
+        }
+        return config('realpanel.ns1', $domain ? 'ns1.' . $domain : 'ns1.realpanel.io');
+    }
+
+    /**
+     * Get the default secondary nameserver (NS2), dynamically replacing {domain} if provided.
+     */
+    public static function getNs2(?string $domain = null): string
+    {
+        $val = trim((string) (static::get('default_ns2') ?: static::get('ns2')));
+        if ($val !== '') {
+            $val = rtrim($val, '.');
+            return $domain ? str_replace('{domain}', $domain, $val) : $val;
+        }
+        return config('realpanel.ns2', $domain ? 'ns2.' . $domain : 'ns2.realpanel.io');
+    }
 }

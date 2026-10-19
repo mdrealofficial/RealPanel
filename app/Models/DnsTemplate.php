@@ -28,8 +28,8 @@ class DnsTemplate extends Model
      */
     public function resolveRecords(string $domain, string $serverIp): array
     {
-        $ns1 = config('realpanel.ns1', 'ns1.' . $domain);
-        $ns2 = config('realpanel.ns2', 'ns2.' . $domain);
+        $ns1 = Setting::getNs1($domain);
+        $ns2 = Setting::getNs2($domain);
 
         return collect($this->records)->map(function ($record) use ($domain, $serverIp, $ns1, $ns2) {
             $replace = fn ($str) => str_replace(

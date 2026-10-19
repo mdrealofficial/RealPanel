@@ -45,6 +45,16 @@ class SystemSettingsController extends Controller
             $extra['php_versions'] = config('realpanel.php_versions', ['8.1', '8.2', '8.3', '8.4']);
             $extra['default_php_version'] = $settings['default_php_version']
                 ?? config('realpanel.default_php_version', '8.3');
+            $extra['default_ns1'] = array_key_exists('default_ns1', $settings)
+                ? $settings['default_ns1']
+                : (array_key_exists('ns1', $settings)
+                    ? $settings['ns1']
+                    : config('realpanel.ns1', 'ns1.realpanel.io'));
+            $extra['default_ns2'] = array_key_exists('default_ns2', $settings)
+                ? $settings['default_ns2']
+                : (array_key_exists('ns2', $settings)
+                    ? $settings['ns2']
+                    : config('realpanel.ns2', 'ns2.realpanel.io'));
         }
 
         return view('system-settings.index', [
@@ -81,8 +91,17 @@ class SystemSettingsController extends Controller
             case 'domains':
                 $validated = $request->validate([
                     'default_php_version' => 'required|in:' . implode(',', config('realpanel.php_versions', ['8.1', '8.2', '8.3', '8.4'])),
+                    'default_ns1'         => 'nullable|string|max:255',
+                    'default_ns2'         => 'nullable|string|max:255',
                 ]);
                 Setting::set('default_php_version', $validated['default_php_version'], 'system_domains');
+
+                $ns1 = isset($validated['default_ns1']) ? rtrim(trim($validated['default_ns1']), '.') : '';
+                $ns2 = isset($validated['default_ns2']) ? rtrim(trim($validated['default_ns2']), '.') : '';
+                Setting::set('default_ns1', $ns1, 'system_domains');
+                Setting::set('default_ns2', $ns2, 'system_domains');
+                Setting::set('ns1', $ns1, 'system_domains');
+                Setting::set('ns2', $ns2, 'system_domains');
                 break;
 
             case 'mail':

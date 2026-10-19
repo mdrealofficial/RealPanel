@@ -83,32 +83,69 @@
                         </div>
                     </form>
 
-                {{-- ── 2. Domains ────────────────────────────────────────── --}}
+                {{-- ── 2. Domains & DNS ───────────────────────────────────── --}}
                 @elseif($category === 'domains')
                     <h3 class="text-lg font-semibold text-gray-800 mb-1">{{ __('system-settings.domains_title') }}</h3>
                     <p class="text-sm text-gray-500 mb-6">{{ __('system-settings.domains_subtitle') }}</p>
 
                     <form action="{{ route('admin.system-settings.update', ['category' => 'domains']) }}" method="POST">
                         @csrf
-                        <div class="mb-6">
-                            <label for="default_php_version" class="block text-sm font-medium text-gray-700 mb-1.5">
-                                {{ __('system-settings.default_php_version_label') }}
-                            </label>
-                            <p class="text-xs text-gray-500 mb-2">{{ __('system-settings.default_php_version_hint') }}</p>
-                            <select name="default_php_version" id="default_php_version"
-                                    class="w-full max-w-xs rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                @foreach($extra['php_versions'] as $version)
-                                    <option value="{{ $version }}" @selected($extra['default_php_version'] === $version)>
-                                        PHP {{ $version }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('default_php_version')
-                                <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                        <div class="space-y-6">
+                            <div>
+                                <label for="default_php_version" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                    {{ __('system-settings.default_php_version_label') }}
+                                </label>
+                                <p class="text-xs text-gray-500 mb-2">{{ __('system-settings.default_php_version_hint') }}</p>
+                                <select name="default_php_version" id="default_php_version"
+                                        class="w-full max-w-xs rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    @foreach($extra['php_versions'] as $version)
+                                        <option value="{{ $version }}" @selected($extra['default_php_version'] === $version)>
+                                            PHP {{ $version }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('default_php_version')
+                                    <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="pt-6 border-t border-gray-100">
+                                <h4 class="text-base font-semibold text-gray-800 mb-1">{{ __('system-settings.nameservers_title') }}</h4>
+                                <p class="text-xs text-gray-500 mb-4">{{ __('system-settings.nameservers_hint') }}</p>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+                                    <div>
+                                        <label for="default_ns1" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                            {{ __('system-settings.default_ns1_label') }}
+                                        </label>
+                                        <input type="text" name="default_ns1" id="default_ns1"
+                                               value="{{ old('default_ns1', $extra['default_ns1'] ?? '') }}"
+                                               placeholder="ns1.yourdomain.com"
+                                               class="w-full rounded-lg border-gray-300 shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500">
+                                        <p class="text-xs text-gray-400 mt-1">{{ __('system-settings.default_ns1_subtext') }}</p>
+                                        @error('default_ns1')
+                                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="default_ns2" class="block text-sm font-medium text-gray-700 mb-1.5">
+                                            {{ __('system-settings.default_ns2_label') }}
+                                        </label>
+                                        <input type="text" name="default_ns2" id="default_ns2"
+                                               value="{{ old('default_ns2', $extra['default_ns2'] ?? '') }}"
+                                               placeholder="ns2.yourdomain.com"
+                                               class="w-full rounded-lg border-gray-300 shadow-sm text-sm font-mono focus:border-indigo-500 focus:ring-indigo-500">
+                                        <p class="text-xs text-gray-400 mt-1">{{ __('system-settings.default_ns2_subtext') }}</p>
+                                        @error('default_ns2')
+                                            <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="pt-4 border-t border-gray-100">
+                        <div class="pt-6 mt-6 border-t border-gray-100">
                             <button type="submit" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition">
                                 {{ __('system-settings.save') }}
                             </button>
