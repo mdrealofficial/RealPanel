@@ -140,8 +140,8 @@ class AccountController extends Controller
             AgentService::for($server)->post('/dns/create-zone', [
                 'domain'    => $domain->domain,
                 'server_ip' => $server->ip_address,
-                'ns1'       => config('opterius.ns1', 'ns1.' . $domain->domain),
-                'ns2'       => config('opterius.ns2', 'ns2.' . $domain->domain),
+                'ns1'       => config('realpanel.ns1', 'ns1.' . $domain->domain),
+                'ns2'       => config('realpanel.ns2', 'ns2.' . $domain->domain),
             ]);
 
             // Auto SSL

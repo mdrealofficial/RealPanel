@@ -1,8 +1,8 @@
-# Opterius Panel
+# RealPanel
 
 **The modern web hosting control panel.** A fast, clean alternative to cPanel — built for hosting companies who want full control without the legacy price tag.
 
-Opterius Panel is the open-source web interface that manages hosting accounts, domains, email, databases, SSL certificates, and more. It communicates with the [Opterius Agent](https://opterius.com) (a separate closed-source binary) that executes privileged server operations.
+RealPanel is the open-source web interface that manages hosting accounts, domains, email, databases, SSL certificates, and more. It communicates with the [RealPanel Agent](https://realpanel.io) that executes server operations.
 
 ---
 
@@ -73,7 +73,7 @@ Opterius Panel is the open-source web interface that manages hosting accounts, d
 
 ```
 ┌──────────────────────────────────────┐
-│         Opterius Panel               │
+│         RealPanel                    │
 │     (this repo — open source)        │
 │                                      │
 │  Laravel PHP app running as www-data │
@@ -86,8 +86,8 @@ Opterius Panel is the open-source web interface that manages hosting accounts, d
                │ HMAC-signed HTTP
                ▼
 ┌──────────────────────────────────────┐
-│         Opterius Agent               │
-│     (closed source — Go binary)      │
+│         RealPanel Agent              │
+│     (Go binary)                      │
 │                                      │
 │  Runs as root, executes privileged   │
 │  operations: create users, write     │
@@ -95,8 +95,6 @@ Opterius Panel is the open-source web interface that manages hosting accounts, d
 │  issue SSL certs, create databases,  │
 │  manage email accounts, etc.         │
 │                                      │
-│  License-checked — blocks writes     │
-│  without a valid license key         │
 └──────────────────────────────────────┘
 ```
 
@@ -127,15 +125,15 @@ The installer sets up everything automatically: Nginx, PHP-FPM, MariaDB, Dovecot
 
 ## Free Plan
 
-Opterius Panel is **free for up to 5 hosting accounts** with all features enabled. No credit card required. No feature restrictions.
+RealPanel is **free for up to 5 hosting accounts** with all features enabled. No credit card required. No feature restrictions.
 
-Paid plans unlock higher account limits for hosting companies managing more servers and customers. See [opterius.com/pricing](https://opterius.com/pricing) for details.
+Paid plans unlock higher account limits for hosting companies managing more servers and customers. See [realpanel.io/pricing](https://realpanel.io/pricing) for details.
 
 ---
 
 ## Documentation
 
-Full documentation is available at [opterius.com/docs](https://opterius.com/docs/en), covering:
+Full documentation is available at [realpanel.io/docs](https://realpanel.io/docs/en), covering:
 
 - Getting started and installation
 - Account and domain management
@@ -168,8 +166,7 @@ Contributions are welcome! Please read the guidelines below before submitting.
 
 ### What we don't accept
 
-- Changes that require modifications to the closed-source agent
-- Features that bypass the license check
+- Features that bypass security validations
 - Breaking changes to the agent communication protocol
 
 ### Code style
@@ -182,18 +179,18 @@ Contributions are welcome! Please read the guidelines below before submitting.
 
 ## License
 
-Opterius Panel is open source under the [GNU Affero General Public License v3.0](LICENSE).
+RealPanel is open source under the [GNU Affero General Public License v3.0](LICENSE).
 
-The Opterius Agent is a separate closed-source binary distributed under a commercial license by Host Server SRL. A free license is available for personal use and small businesses (up to 5 hosting accounts).
+The RealPanel Agent is open-source software.
 
 ---
 
 ## Links
 
-- **Website**: [opterius.com](https://opterius.com)
-- **Documentation**: [opterius.com/docs](https://opterius.com/docs/en)
-- **Pricing**: [opterius.com/pricing](https://opterius.com/pricing)
-- **Support**: [opterius.com/dashboard/tickets](https://opterius.com/dashboard/tickets)
+- **Website**: [realpanel.io](https://realpanel.io)
+- **Documentation**: [realpanel.io/docs](https://realpanel.io/docs/en)
+- **Pricing**: [realpanel.io/pricing](https://realpanel.io/pricing)
+- **Support**: [realpanel.io/dashboard/tickets](https://realpanel.io/dashboard/tickets)
 
 ---
 

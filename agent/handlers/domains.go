@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"opterius-agent-oss/system"
+	"realpanel-agent-oss/system"
 )
 
 type DomainCreateReq struct {
@@ -68,7 +68,7 @@ func DomainCreateHandler(w http.ResponseWriter, r *http.Request) {
 <head><title>Welcome to %s</title></head>
 <body style="font-family: sans-serif; text-align: center; padding: 50px;">
   <h1>%s is successfully hosted!</h1>
-  <p>Managed via Opterius Panel.</p>
+  <p>Managed via RealPanel.</p>
 </body>
 </html>`, req.Domain, req.Domain)
 		os.WriteFile(indexFile, []byte(defaultHTML), 0644)

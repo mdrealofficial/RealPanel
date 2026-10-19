@@ -88,7 +88,7 @@
                     <div>
                         <h3 class="text-base font-semibold text-gray-800">Agent connected</h3>
                         <p class="text-xs text-gray-500 mt-0.5">
-                            The Opterius agent on this server is communicating with the panel. No action required.
+                            The RealPanel agent on this server is communicating with the panel. No action required.
                             @if($server->last_ping_at)
                                 Last ping {{ $server->last_ping_at->diffForHumans() }}.
                             @endif

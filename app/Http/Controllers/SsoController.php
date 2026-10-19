@@ -11,16 +11,16 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
- * SSO — token-based auto-login from opterius.com client zone.
+ * SSO — token-based auto-login from realpanel.io client zone.
  *
  * Flow:
- *   1. opterius.com calls POST /sso/issue (server-to-server, HMAC-signed).
+ *   1. realpanel.io calls POST /sso/issue (server-to-server, HMAC-signed).
  *      Panel validates signature and returns a one-time token.
- *   2. opterius.com redirects the user's browser to GET /sso/login?token=...
+ *   2. realpanel.io redirects the user's browser to GET /sso/login?token=...
  *      Panel validates the token, logs the user in, redirects to dashboard.
  *
  * Required .env:
- *   OPTERIUS_SSO_SECRET=<shared secret, min 32 chars, same on opterius.com>
+ *   REALPANEL_SSO_SECRET=<shared secret, min 32 chars, same on realpanel.io>
  */
 class SsoController extends Controller
 {
@@ -28,13 +28,13 @@ class SsoController extends Controller
 
     /**
      * POST /sso/issue
-     * Server-to-server — called by opterius.com.
+     * Server-to-server — called by realpanel.io.
      *
      * Body: { "email": "...", "timestamp": 1234567890, "signature": "hex-hmac-sha256" }
      */
     public function issue(Request $request): JsonResponse
     {
-        $secret = config('opterius.sso_secret');
+        $secret = config('realpanel.sso_secret');
 
         if (empty($secret)) {
             return response()->json(['error' => 'SSO is not configured.'], 403);
@@ -74,7 +74,7 @@ class SsoController extends Controller
 
     /**
      * GET /sso/login?token=...
-     * Browser redirect — user arrives here from opterius.com.
+     * Browser redirect — user arrives here from realpanel.io.
      */
     public function login(Request $request): RedirectResponse
     {

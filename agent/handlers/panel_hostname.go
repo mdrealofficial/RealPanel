@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"opterius-agent-oss/system"
+	"realpanel-agent-oss/system"
 )
 
 type PanelSetHostnameReq struct {
@@ -32,7 +32,10 @@ func PanelSetHostnameHandler(w http.ResponseWriter, r *http.Request) {
 		email = "admin@" + hostname
 	}
 
-	panelDir := "/opt/opterius"
+	panelDir := "/opt/realpanel"
+	if _, err := os.Stat(panelDir); os.IsNotExist(err) {
+		panelDir = "/opt/opterius"
+	}
 	publicDir := panelDir + "/public"
 
 	// 1. Issue certificate with certbot using webroot against panel public directory
@@ -129,9 +132,9 @@ func PanelSetHostnameHandler(w http.ResponseWriter, r *http.Request) {
 }
 `, hostname, certFile, keyFile, panelDir, fpmSock, fpmSock)
 
-	vhostPath := "/etc/nginx/sites-available/opterius-panel.conf"
+	vhostPath := "/etc/nginx/sites-available/realpanel.conf"
 	if _, err := os.Stat("/etc/nginx/sites-available"); os.IsNotExist(err) {
-		vhostPath = "/etc/nginx/conf.d/opterius-panel.conf"
+		vhostPath = "/etc/nginx/conf.d/realpanel.conf"
 	}
 
 	if err := os.WriteFile(vhostPath, []byte(vhostContent), 0644); err != nil {
@@ -143,10 +146,18 @@ func PanelSetHostnameHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Symlink if on Debian/Ubuntu
 	if _, err := os.Stat("/etc/nginx/sites-enabled"); err == nil {
-		system.ExecCommand("ln", "-sf", vhostPath, "/etc/nginx/sites-enabled/opterius-panel.conf")
+		system.ExecCommand("ln", "-sf", vhostPath, "/etc/nginx/sites-enabled/realpanel.conf")
+		// Clean up legacy vhost symlinks
+		os.Remove("/etc/nginx/sites-enabled/opterius-panel.conf")
+	}
+	os.Remove("/etc/nginx/conf.d/opterius-panel.conf")
+
+	// Configure SSL for RealPanel Mail webmail on port 8090
+	mailDir := "/opt/realpanel-mail"
+	if _, err := os.Stat(mailDir); os.IsNotExist(err) {
+		mailDir = "/opt/opterius-mail"
 	}
 
-	// Configure SSL for Opterius Mail webmail on port 8090
 	mailVhost := fmt.Sprintf(`server {
     listen 8090 ssl http2;
     listen [::]:8090 ssl http2;
@@ -157,7 +168,7 @@ func PanelSetHostnameHandler(w http.ResponseWriter, r *http.Request) {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
 
-    root /opt/opterius-mail/public;
+    root %s/public;
     index index.php;
 
     location / {
@@ -174,12 +185,17 @@ func PanelSetHostnameHandler(w http.ResponseWriter, r *http.Request) {
         deny all;
     }
 }
-`, certFile, keyFile, fpmSock)
-	mailConfPath := "/etc/nginx/sites-available/opterius-mail.conf"
+`, certFile, keyFile, mailDir, fpmSock)
+	mailConfPath := "/etc/nginx/sites-available/realpanel-mail.conf"
 	if _, err := os.Stat("/etc/nginx/sites-available"); os.IsNotExist(err) {
-		mailConfPath = "/etc/nginx/conf.d/opterius-mail.conf"
+		mailConfPath = "/etc/nginx/conf.d/realpanel-mail.conf"
 	}
 	os.WriteFile(mailConfPath, []byte(mailVhost), 0644)
+	if _, err := os.Stat("/etc/nginx/sites-enabled"); err == nil {
+		system.ExecCommand("ln", "-sf", mailConfPath, "/etc/nginx/sites-enabled/realpanel-mail.conf")
+		os.Remove("/etc/nginx/sites-enabled/opterius-mail.conf")
+	}
+	os.Remove("/etc/nginx/conf.d/opterius-mail.conf")
 
 	// Configure SSL for phpMyAdmin on port 8081
 	pmaVhost := fmt.Sprintf(`server {

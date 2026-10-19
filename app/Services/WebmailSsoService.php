@@ -16,8 +16,8 @@ class WebmailSsoService
      */
     public static function loginUrl(string $email): ?string
     {
-        $secret     = config('opterius.webmail_sso_secret');
-        $webmailUrl = rtrim(config('opterius.webmail_url'), '/');
+        $secret     = config('realpanel.webmail_sso_secret');
+        $webmailUrl = rtrim(config('realpanel.webmail_url'), '/');
 
         if (!$secret || !$webmailUrl || str_contains($webmailUrl, 'SERVER_IP')) {
             return null;

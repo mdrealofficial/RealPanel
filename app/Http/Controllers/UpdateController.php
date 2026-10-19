@@ -11,12 +11,12 @@ class UpdateController extends Controller
 {
     public function index()
     {
-        $currentVersion = config('opterius.version', '1.0.0');
+        $currentVersion = config('realpanel.version', '1.0.0');
 
         // Check for latest version from GitHub repository
         $latestVersion = null;
-        $updateUrl = config('opterius.update_version_url', 'https://raw.githubusercontent.com/mdrealofficial/RealPanel/main/version.txt');
-        $repo = config('opterius.github_repo', 'mdrealofficial/RealPanel');
+        $updateUrl = config('realpanel.update_version_url', 'https://raw.githubusercontent.com/mdrealofficial/RealPanel/main/version.txt');
+        $repo = config('realpanel.github_repo', 'mdrealofficial/RealPanel');
 
         try {
             $response = Http::timeout(5)->get($updateUrl);
@@ -143,7 +143,7 @@ class UpdateController extends Controller
     }
 
     /**
-     * Force an immediate webmail (Opterius Mail) git pull + migrate via the agent.
+     * Force an immediate webmail (RealPanel Mail) git pull + migrate via the agent.
      */
     public function forceMailUpdate(Request $request)
     {

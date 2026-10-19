@@ -12,8 +12,8 @@ class LicenseService
 
     public function __construct()
     {
-        $this->serverUrl = rtrim(config('opterius.license_server_url'), '/');
-        $this->licenseKey = config('opterius.license_key', '');
+        $this->serverUrl = rtrim(config('realpanel.license_server_url'), '/');
+        $this->licenseKey = config('realpanel.license_key', '');
     }
 
     /**

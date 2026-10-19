@@ -6,19 +6,27 @@ import (
 	"log"
 	"net/http"
 
-	"opterius-agent-oss/auth"
-	"opterius-agent-oss/config"
-	"opterius-agent-oss/handlers"
-	"opterius-agent-oss/system"
+	"realpanel-agent-oss/auth"
+	"realpanel-agent-oss/config"
+	"realpanel-agent-oss/handlers"
+	"realpanel-agent-oss/system"
 )
 
 func main() {
-	configPath := flag.String("config", "/etc/opterius/agent.conf", "Path to agent configuration file")
+	configPath := flag.String("config", "/etc/realpanel/agent.conf", "Path to agent configuration file")
 	flag.Parse()
 
-	cfg, err := config.Load(*configPath)
+	// Fallback to legacy path if new path doesn't exist
+	activeConfPath := *configPath
+	if _, err := os.Stat(activeConfPath); os.IsNotExist(err) {
+		if _, legacyErr := os.Stat("/etc/opterius/agent.conf"); legacyErr == nil {
+			activeConfPath = "/etc/opterius/agent.conf"
+		}
+	}
+
+	cfg, err := config.Load(activeConfPath)
 	if err != nil {
-		log.Printf("[WARN] Could not load config file at %s: %v. Using defaults.", *configPath, err)
+		log.Printf("[WARN] Could not load config file at %s: %v. Using defaults.", activeConfPath, err)
 	}
 
 	mux := http.NewServeMux()
@@ -122,7 +130,7 @@ func main() {
 	handlerWithAuth := auth.Middleware(cfg.Secret, mux)
 
 	addr := fmt.Sprintf("%s:%d", cfg.ListenAddr, cfg.Port)
-	log.Printf("[OK] Open-Source Opterius Agent listening on %s (HMAC enabled)", addr)
+	log.Printf("[OK] Open-Source RealPanel Agent listening on %s (HMAC enabled)", addr)
 
 	if err := http.ListenAndServe(addr, handlerWithAuth); err != nil {
 		log.Fatalf("[FATAL] Agent failed to start: %v", err)

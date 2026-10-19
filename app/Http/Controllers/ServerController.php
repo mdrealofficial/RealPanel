@@ -40,7 +40,7 @@ class ServerController extends Controller
 
         $validated['user_id'] = auth()->id();
         $validated['agent_token'] = Str::random(64);
-        $validated['agent_url'] = 'http://' . $validated['ip_address'] . ':' . config('opterius.agent_port');
+        $validated['agent_url'] = 'http://' . $validated['ip_address'] . ':' . config('realpanel.agent_port');
 
         $server = Server::create($validated);
 

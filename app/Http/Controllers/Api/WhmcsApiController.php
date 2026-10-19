@@ -30,7 +30,7 @@ class WhmcsApiController extends Controller
             'message' => 'Connection successful.',
             'data'    => [
                 'panel'   => 'RealPanel',
-                'version' => config('opterius.version', '1.0.0'),
+                'version' => config('realpanel.version', '1.0.0'),
             ],
         ]);
     }

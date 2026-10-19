@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Opterius Agent Installer
-# Usage: curl -sL https://get.opterius.com/agent | bash -s -- --token=YOUR_TOKEN
+# RealPanel Agent Installer
+# Usage: curl -sL https://raw.githubusercontent.com/mdrealofficial/RealPanel/main/installer/install-agent.sh | bash -s -- --token=YOUR_TOKEN
 #
 # Supports: Ubuntu 22.04, Ubuntu 24.04, Debian 12, AlmaLinux 9
 #
@@ -69,10 +69,9 @@ esac
 # ============================================================
 # Configuration
 # ============================================================
-AGENT_BIN="/usr/local/bin/opterius-agent"
-CONF_DIR="/etc/opterius"
+AGENT_BIN="/usr/local/bin/realpanel-agent"
+CONF_DIR="/etc/realpanel"
 CONF_FILE="${CONF_DIR}/agent.conf"
-DOWNLOAD_URL="https://github.com/opterius/agent/releases/latest/download/opterius-agent-${ARCH_SUFFIX}"
 
 # ============================================================
 # Install
@@ -92,6 +91,7 @@ git clone --depth 1 https://github.com/mdrealofficial/RealPanel.git "$TMP_DIR"
 cd "$TMP_DIR/agent"
 go build -o "$AGENT_BIN" .
 chmod +x "$AGENT_BIN"
+ln -sf "$AGENT_BIN" /usr/local/bin/opterius-agent
 rm -rf "$TMP_DIR"
 ok "RealPanel Agent compiled and installed to $AGENT_BIN"
 
@@ -104,9 +104,10 @@ info "Agent version: $AGENT_VERSION"
 # ============================================================
 info "Writing configuration..."
 mkdir -p "$CONF_DIR"
+ln -sfn "$CONF_DIR" /etc/opterius 2>/dev/null || true
 
 cat > "$CONF_FILE" <<EOF
-# Opterius Agent Configuration
+# RealPanel Agent Configuration
 # Managed by installer — edit carefully
 secret=${TOKEN}
 listen_addr=${LISTEN_ADDR}
@@ -120,10 +121,11 @@ ok "Configuration written to $CONF_FILE"
 # Systemd service
 # ============================================================
 info "Installing systemd service..."
-cat > /etc/systemd/system/opterius-agent.service <<EOF
+cat > /etc/systemd/system/realpanel-agent.service <<EOF
 [Unit]
-Description=Opterius Agent
+Description=RealPanel Agent
 After=network.target
+Alias=opterius-agent.service
 
 [Service]
 Type=simple
@@ -137,8 +139,10 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOF
 
+ln -sf /etc/systemd/system/realpanel-agent.service /etc/systemd/system/opterius-agent.service 2>/dev/null || true
+
 systemctl daemon-reload
-systemctl enable --now opterius-agent
+systemctl enable --now realpanel-agent
 ok "Agent service started"
 
 # ============================================================
@@ -207,15 +211,15 @@ HEALTH=$(curl -s http://127.0.0.1:${PORT}/health 2>/dev/null || echo '{"status":
 
 echo ""
 echo -e "${GREEN}${BOLD}========================================${NC}"
-echo -e "${GREEN}${BOLD}   Opterius Agent installed!${NC}"
+echo -e "${GREEN}${BOLD}   RealPanel Agent installed!${NC}"
 echo -e "${GREEN}${BOLD}========================================${NC}"
 echo ""
-echo -e "  Status:    $(systemctl is-active opterius-agent)"
+echo -e "  Status:    $(systemctl is-active realpanel-agent)"
 echo -e "  Listening: ${LISTEN_ADDR}:${PORT}"
 echo -e "  Health:    ${HEALTH}"
 echo -e "  Config:    ${CONF_FILE}"
 echo ""
 echo -e "  Installed: Nginx, PHP 8.3, MariaDB, Certbot"
 echo ""
-echo -e "${CYAN}  This server is now ready to be managed from Opterius Panel.${NC}"
+echo -e "${CYAN}  This server is now ready to be managed from RealPanel.${NC}"
 echo ""

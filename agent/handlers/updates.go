@@ -8,20 +8,25 @@ import (
 	"strings"
 	"time"
 
-	"opterius-agent-oss/system"
+	"realpanel-agent-oss/system"
 )
 
 // VersionHandler returns version information for RealPanel agent and services
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	// Read panel version if available
-	panelVer := "2.9.20"
-	versionFile := "/opt/opterius/version.txt"
+	panelDir := "/opt/realpanel"
+	if _, err := os.Stat(panelDir); os.IsNotExist(err) {
+		panelDir = "/opt/opterius"
+	}
+	versionFile := filepath.Join(panelDir, "version.txt")
 	if data, err := os.ReadFile(versionFile); err == nil {
 		panelVer = strings.TrimSpace(string(data))
 	}
 
 	mailInstalled := false
-	if _, err := os.Stat("/opt/opterius-mail"); err == nil {
+	if _, err := os.Stat("/opt/realpanel-mail"); err == nil {
+		mailInstalled = true
+	} else if _, err := os.Stat("/opt/opterius-mail"); err == nil {
 		mailInstalled = true
 	}
 
@@ -49,7 +54,10 @@ func UpdateLogHandler(w http.ResponseWriter, r *http.Request) {
 
 // UpdateRunHandler executes the panel update script and agent recompile synchronously
 func UpdateRunHandler(w http.ResponseWriter, r *http.Request) {
-	panelDir := "/opt/opterius"
+	panelDir := "/opt/realpanel"
+	if _, err := os.Stat(panelDir); os.IsNotExist(err) {
+		panelDir = "/opt/opterius"
+	}
 	logPath := "/var/log/realpanel-update.log"
 
 	os.MkdirAll(filepath.Dir(logPath), 0755)
@@ -84,7 +92,7 @@ func UpdateRunHandler(w http.ResponseWriter, r *http.Request) {
 	writeLog("Git pull output:\n" + pullOut + "\n")
 
 	// 3. Run Laravel migrations and cache clearing
-	artisanCmd := fmt.Sprintf("cd %s && php artisan migrate --force && php artisan view:clear && php artisan config:clear && php artisan cache:clear 2>&1", panelDir)
+	artisanCmd := fmt.Sprintf("cd %s && php artisan migrate --force && php artisan view:clear && php artisan route:clear && php artisan config:clear && php artisan cache:clear 2>&1", panelDir)
 	artOut, artErr := system.ExecCommand("bash", "-c", artisanCmd)
 	if artErr != nil {
 		writeLog("Artisan Warning/Error: " + artOut + "\n")
@@ -95,6 +103,18 @@ func UpdateRunHandler(w http.ResponseWriter, r *http.Request) {
 	// 4. Automatic System & Service Repairs (PowerDNS, DNSStubListener, ttyd, etc.)
 	writeLog("Checking & applying automatic service maintenance fixes...\n")
 	sysFixCmd := `
+# Ensure symlinks between legacy and new directory structures
+if [ -d /opt/opterius ] && [ ! -e /opt/realpanel ]; then
+    ln -sfn /opt/opterius /opt/realpanel 2>/dev/null || true
+fi
+if [ -d /opt/realpanel ] && [ ! -e /opt/opterius ]; then
+    ln -sfn /opt/realpanel /opt/opterius 2>/dev/null || true
+fi
+if [ -d /etc/opterius ] && [ ! -d /etc/realpanel ]; then
+    cp -rn /etc/opterius /etc/realpanel 2>/dev/null || true
+    ln -sfn /etc/realpanel /etc/opterius 2>/dev/null || true
+fi
+
 # --- PowerDNS Database Schema & Fixes ---
 if command -v mysql >/dev/null 2>&1 && mysql -u root -e "USE pdns;" >/dev/null 2>&1; then
     mysql -u root <<'EOSQL' >/dev/null 2>&1 || true
@@ -195,7 +215,16 @@ fi
 	// 5. Rebuild and restart the Go agent in the background so this request finishes cleanly
 	go func() {
 		time.Sleep(1 * time.Second)
-		agentBuildCmd := fmt.Sprintf("cd %s/agent && go build -o /usr/local/bin/opterius-agent . && systemctl restart opterius-agent", panelDir)
+		agentBuildCmd := fmt.Sprintf(`cd %s/agent && go build -o /usr/local/bin/realpanel-agent . && chmod +x /usr/local/bin/realpanel-agent && ln -sf /usr/local/bin/realpanel-agent /usr/local/bin/opterius-agent
+if [ -f /etc/systemd/system/opterius-agent.service ] && [ ! -f /etc/systemd/system/realpanel-agent.service ]; then
+    cp /etc/systemd/system/opterius-agent.service /etc/systemd/system/realpanel-agent.service
+    sed -i 's|Description=.*|Description=RealPanel Agent|' /etc/systemd/system/realpanel-agent.service
+    sed -i 's|/opterius-agent|/realpanel-agent|g' /etc/systemd/system/realpanel-agent.service
+    systemctl daemon-reload 2>/dev/null || true
+    systemctl enable realpanel-agent 2>/dev/null || true
+fi
+systemctl restart realpanel-agent 2>/dev/null || systemctl restart opterius-agent 2>/dev/null || true
+`, panelDir)
 		system.ExecCommand("bash", "-c", agentBuildCmd)
 	}()
 

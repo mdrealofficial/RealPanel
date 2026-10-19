@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"opterius-agent-oss/system"
+	"realpanel-agent-oss/system"
 )
 
 type ServiceActionReq struct {
@@ -38,7 +38,7 @@ func ServicesListHandler(w http.ResponseWriter, r *http.Request) {
 		{Name: "fail2ban", DisplayName: "Fail2ban Intrusion Prevention", Aliases: []string{"fail2ban"}},
 		{Name: "ufw", DisplayName: "UFW Firewall", Aliases: []string{"ufw"}},
 		{Name: "ttyd", DisplayName: "Root Web Terminal (ttyd)", Aliases: []string{"ttyd"}},
-		{Name: "opterius-agent", DisplayName: "RealPanel Agent", Aliases: []string{"opterius-agent"}},
+		{Name: "realpanel-agent", DisplayName: "RealPanel Agent", Aliases: []string{"realpanel-agent", "opterius-agent"}},
 	}
 
 	// Detect installed PHP-FPM versions dynamically
@@ -126,7 +126,7 @@ func ServiceActionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Prevent stopping the agent itself
-	if service == "opterius-agent" && action == "stop" {
+	if (service == "realpanel-agent" || service == "opterius-agent") && action == "stop" {
 		system.RespondJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "Cannot stop RealPanel Agent from web UI",
 		})

@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"opterius-agent-oss/system"
+	"realpanel-agent-oss/system"
 )
 
 type PhpInstallReq struct {
@@ -423,7 +423,7 @@ func PhpConfigHandler(w http.ResponseWriter, r *http.Request) {
 		if req.Domain != "" && len(req.Values) > 0 {
 			overrideFile := fmt.Sprintf("/etc/php/%s/fpm/conf.d/99-domain-%s.ini", v, req.Domain)
 			var lines []string
-			lines = append(lines, fmt.Sprintf("; Opterius domain override for %s", req.Domain))
+			lines = append(lines, fmt.Sprintf("; RealPanel domain override for %s", req.Domain))
 			for k, val := range req.Values {
 				lines = append(lines, fmt.Sprintf("%s = %s", k, val))
 			}

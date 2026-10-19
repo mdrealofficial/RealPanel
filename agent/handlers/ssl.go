@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"opterius-agent-oss/system"
+	"realpanel-agent-oss/system"
 )
 
 type SslStatusReq struct {
@@ -36,7 +36,10 @@ func SslStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 	certPath := fmt.Sprintf("/etc/letsencrypt/live/%s/fullchain.pem", req.Domain)
 	if _, err := os.Stat(certPath); os.IsNotExist(err) {
-		certPath = fmt.Sprintf("/etc/ssl/opterius/%s/fullchain.pem", req.Domain)
+		certPath = fmt.Sprintf("/etc/ssl/realpanel/%s/fullchain.pem", req.Domain)
+		if _, err := os.Stat(certPath); os.IsNotExist(err) {
+			certPath = fmt.Sprintf("/etc/ssl/opterius/%s/fullchain.pem", req.Domain)
+		}
 	}
 
 	if _, err := os.Stat(certPath); err == nil {
@@ -123,7 +126,7 @@ func SslUploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sslDir := fmt.Sprintf("/etc/ssl/opterius/%s", req.Domain)
+	sslDir := fmt.Sprintf("/etc/ssl/realpanel/%s", req.Domain)
 	os.MkdirAll(sslDir, 0700)
 
 	certFile := filepath.Join(sslDir, "fullchain.pem")

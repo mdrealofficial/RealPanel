@@ -18,6 +18,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Backward-compatibility alias: config('realpanel.*') -> config('realpanel.*')
+        config(['opterius' => config('realpanel')]);
+
         Event::listen(Login::class, function (Login $event) {
             ActivityLogger::log('user.login', 'user', $event->user->id, $event->user->email,
                 "User {$event->user->name} logged in", ['user_agent' => request()->userAgent()]);

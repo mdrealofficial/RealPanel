@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"opterius-agent-oss/system"
+	"realpanel-agent-oss/system"
 )
 
 type NodeAppStartReq struct {

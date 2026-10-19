@@ -37,7 +37,7 @@
     <main class="flex-1 flex items-center justify-center px-8">
         <div class="text-center max-w-2xl">
             <div class="inline-flex items-center px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/30 text-orange-400 text-xs font-medium mb-6">
-                v{{ config('opterius.version', '1.0.0') }}
+                v{{ config('realpanel.version', '1.0.0') }}
             </div>
 
             <h1 class="text-5xl sm:text-6xl font-bold leading-tight">

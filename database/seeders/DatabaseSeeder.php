@@ -20,8 +20,8 @@ class DatabaseSeeder extends Seeder
         Package::create([
             'name' => 'Default',
             'description' => 'Default hosting package',
-            'php_versions' => config('opterius.php_versions'),
-            'default_php_version' => config('opterius.default_php_version'),
+            'php_versions' => config('realpanel.php_versions'),
+            'default_php_version' => config('realpanel.default_php_version'),
             'disk_quota' => 0,
             'bandwidth' => 0,
             'max_subdomains' => 0,

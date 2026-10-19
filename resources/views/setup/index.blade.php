@@ -115,7 +115,7 @@
         </div>
 
         <p class="text-center text-xs text-gray-400 mt-6">
-            RealPanel v{{ config('opterius.version', '1.0.0') }}
+            RealPanel v{{ config('realpanel.version', '1.0.0') }}
         </p>
 
     </div>

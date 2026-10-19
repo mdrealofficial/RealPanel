@@ -64,20 +64,19 @@ ok "Detected OS: $OS_ID $OS_VERSION"
 # ============================================================
 # Configuration
 # ============================================================
-PANEL_DIR="/opt/opterius"
+PANEL_DIR="/opt/realpanel"
 AGENT_DIR="/usr/local/bin"
-AGENT_CONF_DIR="/etc/opterius"
+AGENT_CONF_DIR="/etc/realpanel"
 PANEL_PORT=8443
 AGENT_PORT=7443
 PHP_VERSION="8.4"
-DB_NAME="opterius"
-DB_USER="opterius"
+DB_NAME="realpanel"
+DB_USER="realpanel"
 DB_PASS=$(openssl rand -base64 24 | tr -dc 'a-zA-Z0-9' | head -c 32)
 AGENT_SECRET=$(openssl rand -hex 32)
 GITHUB_PANEL="https://github.com/mdrealofficial/RealPanel.git"
-AGENT_DOWNLOAD_URL="https://get.opterius.com/agent/opterius-agent-linux-amd64"
 
-# Detect public IP early — used in .env and Opterius Mail config
+# Detect public IP early — used in .env and RealPanel Mail config
 SERVER_IP=$(curl -s4 --max-time 10 ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
 
 # ============================================================
@@ -171,7 +170,7 @@ Listen 127.0.0.1:8080
 EOPORTS
 
     # Global Apache settings: hide version, allow .htaccess, set sensible defaults
-    cat > /etc/apache2/conf-available/opterius.conf <<'EOAPACHE'
+    cat > /etc/apache2/conf-available/realpanel.conf <<'EOAPACHE'
 ServerTokens Prod
 ServerSignature Off
 
@@ -187,7 +186,7 @@ ServerSignature Off
     Require all granted
 </Directory>
 EOAPACHE
-    a2enconf opterius
+    a2enconf realpanel
 
     # Remove the default listen directives from apache2.conf so only ports.conf applies
     sed -i 's/^Listen 80$/#Listen 80/' /etc/apache2/apache2.conf 2>/dev/null || true
@@ -204,7 +203,7 @@ else
     sed -i 's/^Listen 80$/Listen 127.0.0.1:8080/' /etc/httpd/conf/httpd.conf
 
     # Global settings
-    cat > /etc/httpd/conf.d/opterius.conf <<'EOAPACHE'
+    cat > /etc/httpd/conf.d/realpanel.conf <<'EOAPACHE'
 ServerTokens Prod
 ServerSignature Off
 
@@ -442,8 +441,8 @@ postconf -e "virtual_mailbox_maps = hash:/etc/postfix/vmailbox"
 postconf -e "virtual_uid_maps = static:5000"
 postconf -e "virtual_gid_maps = static:5000"
 postconf -e "virtual_transport = lmtp:unix:private/dovecot-lmtp"
-postconf -e "smtpd_tls_cert_file = /etc/ssl/opterius/panel.crt"
-postconf -e "smtpd_tls_key_file = /etc/ssl/opterius/panel.key"
+postconf -e "smtpd_tls_cert_file = /etc/ssl/realpanel/panel.crt"
+postconf -e "smtpd_tls_key_file = /etc/ssl/realpanel/panel.key"
 postconf -e "smtpd_tls_security_level = may"
 postconf -e "smtpd_sasl_type = dovecot"
 postconf -e "smtpd_sasl_path = private/auth"
@@ -521,8 +520,8 @@ EODOVE
 
 cat > /etc/dovecot/conf.d/10-ssl.conf <<EODOVE
 ssl = yes
-ssl_cert = </etc/ssl/opterius/panel.crt
-ssl_key = </etc/ssl/opterius/panel.key
+ssl_cert = </etc/ssl/realpanel/panel.crt
+ssl_key = </etc/ssl/realpanel/panel.key
 ssl_min_protocol = TLSv1.2
 EODOVE
 
@@ -638,19 +637,20 @@ curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin
 ok "Composer installed"
 
 # ============================================================
-# Step 7b: Install Opterius Mail (webmail) — needs Composer
+# Step 7b: Install RealPanel Mail (webmail) — needs Composer
 # ============================================================
-info "Installing Opterius Mail webmail..."
+info "Installing RealPanel Mail webmail..."
 
-MAIL_DIR="/opt/opterius-mail"
-MAIL_DB="opterius_mail"
+MAIL_DIR="/opt/realpanel-mail"
+MAIL_DB="realpanel_mail"
 MAIL_DB_PASS=$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c 24)
 MAIL_APP_KEY=$(php -r "echo 'base64:' . base64_encode(random_bytes(32));")
 MAIL_SSO_SECRET=$(openssl rand -hex 32)
 
-# Clone Opterius Mail (remove any leftover from a previous run)
+# Clone RealPanel Mail (remove any leftover from a previous run)
 rm -rf ${MAIL_DIR}
 git clone --depth=1 https://github.com/opterius/mail.git ${MAIL_DIR}
+ln -sfn ${MAIL_DIR} /opt/opterius-mail 2>/dev/null || true
 git config --global --add safe.directory ${MAIL_DIR}
 
 # Create database
@@ -667,7 +667,7 @@ composer install --no-dev --optimize-autoloader --no-interaction --working-dir=$
 
 # Write .env
 cat > ${MAIL_DIR}/.env <<EOENV_MAIL
-APP_NAME="Opterius Mail"
+APP_NAME="RealPanel Mail"
 APP_ENV=production
 APP_KEY=${MAIL_APP_KEY}
 APP_DEBUG=false
@@ -721,11 +721,11 @@ else
     MAIL_FPM_SOCK="/run/php-fpm/www.sock"
 fi
 
-# Configure Nginx for Opterius Mail (webmail on port 8090)
+# Configure Nginx for RealPanel Mail (webmail on port 8090)
 if [[ "$PKG_MANAGER" == "apt" ]]; then
-    MAIL_VHOST="/etc/nginx/sites-available/opterius-mail.conf"
+    MAIL_VHOST="/etc/nginx/sites-available/realpanel-mail.conf"
 else
-    MAIL_VHOST="/etc/nginx/conf.d/opterius-mail.conf"
+    MAIL_VHOST="/etc/nginx/conf.d/realpanel-mail.conf"
 fi
 
 cat > ${MAIL_VHOST} <<EONGINX_MAIL
@@ -754,14 +754,14 @@ server {
 EONGINX_MAIL
 
 # Enable site (remove old roundcube config if present)
-rm -f /etc/nginx/sites-enabled/roundcube.conf /etc/nginx/conf.d/roundcube.conf
+rm -f /etc/nginx/sites-enabled/roundcube.conf /etc/nginx/conf.d/roundcube.conf /etc/nginx/sites-enabled/opterius-mail.conf /etc/nginx/conf.d/opterius-mail.conf
 if [[ "$PKG_MANAGER" == "apt" ]]; then
-    ln -sf /etc/nginx/sites-available/opterius-mail.conf /etc/nginx/sites-enabled/
+    ln -sf /etc/nginx/sites-available/realpanel-mail.conf /etc/nginx/sites-enabled/
 fi
 
 nginx -t && systemctl reload nginx
 
-ok "Opterius Mail webmail installed (port 8090)"
+ok "RealPanel Mail webmail installed (port 8090)"
 
 # ============================================================
 # Step 7c: Install WP-CLI
@@ -825,9 +825,10 @@ ok "Node.js $(node --version) installed"
 # ============================================================
 # Step 9: Install Laravel Panel
 # ============================================================
-info "Installing Opterius Panel to $PANEL_DIR..."
+info "Installing RealPanel to $PANEL_DIR..."
 rm -rf "$PANEL_DIR"
 git clone --depth 1 "$GITHUB_PANEL" "$PANEL_DIR"
+ln -sfn "$PANEL_DIR" /opt/opterius 2>/dev/null || true
 
 cd "$PANEL_DIR"
 composer install --no-dev --optimize-autoloader --quiet
@@ -844,24 +845,16 @@ sed -i "s|# DB_USERNAME=.*|DB_USERNAME=${DB_USER}|" .env
 sed -i "s|DB_USERNAME=.*|DB_USERNAME=${DB_USER}|" .env
 sed -i "s|# DB_PASSWORD=.*|DB_PASSWORD=${DB_PASS}|" .env
 sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=${DB_PASS}|" .env
-sed -i "s|APP_NAME=.*|APP_NAME=\"Opterius Panel\"|" .env
-sed -i "s|OPTERIUS_AGENT_SECRET=.*|OPTERIUS_AGENT_SECRET=${AGENT_SECRET}|" .env 2>/dev/null || echo "OPTERIUS_AGENT_SECRET=${AGENT_SECRET}" >> .env
+sed -i "s|APP_NAME=.*|APP_NAME=\"RealPanel\"|" .env
+sed -i "s|REALPANEL_AGENT_SECRET=.*|REALPANEL_AGENT_SECRET=${AGENT_SECRET}|" .env 2>/dev/null || echo "REALPANEL_AGENT_SECRET=${AGENT_SECRET}" >> .env
 
 php artisan key:generate --force
 php artisan migrate --force
 
-# Wire up Opterius Mail SSO into the Panel .env (MAIL_SSO_SECRET set in Step 7b)
+# Wire up RealPanel Mail SSO into the Panel .env (MAIL_SSO_SECRET set in Step 7b)
 if [[ -n "${MAIL_SSO_SECRET:-}" ]]; then
-    if grep -q "OPTERIUS_WEBMAIL_SSO_SECRET" .env; then
-        sed -i "s|OPTERIUS_WEBMAIL_SSO_SECRET=.*|OPTERIUS_WEBMAIL_SSO_SECRET=${MAIL_SSO_SECRET}|" .env
-    else
-        echo "OPTERIUS_WEBMAIL_SSO_SECRET=${MAIL_SSO_SECRET}" >> .env
-    fi
-    if grep -q "OPTERIUS_WEBMAIL_URL" .env; then
-        sed -i "s|OPTERIUS_WEBMAIL_URL=.*|OPTERIUS_WEBMAIL_URL=http://127.0.0.1:8090|" .env
-    else
-        echo "OPTERIUS_WEBMAIL_URL=http://127.0.0.1:8090" >> .env
-    fi
+    echo "REALPANEL_WEBMAIL_SSO_SECRET=${MAIL_SSO_SECRET}" >> .env
+    echo "REALPANEL_WEBMAIL_URL=http://127.0.0.1:8090" >> .env
 fi
 
 php artisan config:cache
@@ -883,14 +876,15 @@ git config --global --add safe.directory "$PANEL_DIR"
 # Install Laravel scheduler cron — runs every minute and triggers all
 # scheduled commands (monitor:collect, alerts:check, etc). Without this,
 # server stats and alert checks would never accumulate.
-cat > /etc/cron.d/opterius <<EOCRON
-# Opterius Panel — Laravel scheduler tick
+rm -f /etc/cron.d/opterius
+cat > /etc/cron.d/realpanel <<EOCRON
+# RealPanel — Laravel scheduler tick
 # Runs every minute and dispatches all scheduled commands.
 * * * * * root cd ${PANEL_DIR} && /usr/bin/php artisan schedule:run >> /dev/null 2>&1
 EOCRON
-chmod 644 /etc/cron.d/opterius
+chmod 644 /etc/cron.d/realpanel
 
-ok "Opterius Panel installed"
+ok "RealPanel installed"
 
 # ============================================================
 # Step 10: Configure Nginx for Panel
@@ -898,14 +892,15 @@ ok "Opterius Panel installed"
 info "Configuring Nginx for panel on port $PANEL_PORT..."
 
 # Generate self-signed SSL first (fallback)
-mkdir -p /etc/ssl/opterius
+mkdir -p /etc/ssl/realpanel
+ln -sfn /etc/ssl/realpanel /etc/ssl/opterius 2>/dev/null || true
 openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-    -keyout /etc/ssl/opterius/panel.key \
-    -out /etc/ssl/opterius/panel.crt \
+    -keyout /etc/ssl/realpanel/panel.key \
+    -out /etc/ssl/realpanel/panel.crt \
     -subj "/CN=${PANEL_HOSTNAME}" 2>/dev/null
 
-PANEL_SSL_CERT="/etc/ssl/opterius/panel.crt"
-PANEL_SSL_KEY="/etc/ssl/opterius/panel.key"
+PANEL_SSL_CERT="/etc/ssl/realpanel/panel.crt"
+PANEL_SSL_KEY="/etc/ssl/realpanel/panel.key"
 
 # Try to get Let's Encrypt cert for panel hostname
 if [[ -n "$PANEL_HOSTNAME" ]]; then
@@ -1033,10 +1028,10 @@ fi
 
 # On Debian/Ubuntu use sites-available + symlink; on RHEL/Rocky write directly to conf.d
 if [[ "$PKG_MANAGER" == "apt" ]]; then
-    NGINX_VHOST="/etc/nginx/sites-available/opterius-panel.conf"
+    NGINX_VHOST="/etc/nginx/sites-available/realpanel.conf"
     mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
 else
-    NGINX_VHOST="/etc/nginx/conf.d/opterius-panel.conf"
+    NGINX_VHOST="/etc/nginx/conf.d/realpanel.conf"
 fi
 
 cat > ${NGINX_VHOST} <<EONGINX
@@ -1092,8 +1087,9 @@ server {
 EONGINX
 
 # Enable site (Debian/Ubuntu only — symlink into sites-enabled)
+rm -f /etc/nginx/sites-enabled/opterius-panel.conf /etc/nginx/conf.d/opterius-panel.conf
 if [[ "$PKG_MANAGER" == "apt" ]]; then
-    ln -sf /etc/nginx/sites-available/opterius-panel.conf /etc/nginx/sites-enabled/
+    ln -sf /etc/nginx/sites-available/realpanel.conf /etc/nginx/sites-enabled/
 fi
 
 nginx -t && systemctl reload nginx
@@ -1115,30 +1111,33 @@ if ! command -v go &>/dev/null; then
 fi
 
 mkdir -p "$AGENT_CONF_DIR"
+ln -sfn "$AGENT_CONF_DIR" /etc/opterius 2>/dev/null || true
 
 # Build agent binary directly from open-source repository
 cd "${PANEL_DIR}/agent"
-go build -o "${AGENT_DIR}/opterius-agent" .
-chmod +x "${AGENT_DIR}/opterius-agent"
+go build -o "${AGENT_DIR}/realpanel-agent" .
+chmod +x "${AGENT_DIR}/realpanel-agent"
+ln -sf "${AGENT_DIR}/realpanel-agent" "${AGENT_DIR}/opterius-agent"
 ok "RealPanel Agent compiled successfully"
 
 # Write agent config
 cat > "${AGENT_CONF_DIR}/agent.conf" <<EOCONF
-# Opterius Agent Configuration
+# RealPanel Agent Configuration
 secret=${AGENT_SECRET}
 listen_addr=127.0.0.1
 port=${AGENT_PORT}
 EOCONF
 
 # Install systemd service
-cat > /etc/systemd/system/opterius-agent.service <<EOSERVICE
+cat > /etc/systemd/system/realpanel-agent.service <<EOSERVICE
 [Unit]
-Description=Opterius Agent
+Description=RealPanel Agent
 After=network.target
+Alias=opterius-agent.service
 
 [Service]
 Type=simple
-ExecStart=${AGENT_DIR}/opterius-agent --config ${AGENT_CONF_DIR}/agent.conf
+ExecStart=${AGENT_DIR}/realpanel-agent --config ${AGENT_CONF_DIR}/agent.conf
 Restart=always
 RestartSec=5
 User=root
@@ -1148,9 +1147,11 @@ LimitNOFILE=65536
 WantedBy=multi-user.target
 EOSERVICE
 
+ln -sf /etc/systemd/system/realpanel-agent.service /etc/systemd/system/opterius-agent.service 2>/dev/null || true
+
 systemctl daemon-reload
-systemctl enable --now opterius-agent
-ok "Opterius Agent installed and running"
+systemctl enable --now realpanel-agent
+ok "RealPanel Agent installed and running"
 
 # ============================================================
 # Step 12: Firewall
@@ -1209,8 +1210,8 @@ echo -e "  Hostname:     ${CYAN}${PANEL_HOSTNAME}${NC} (point DNS to this IP for
 echo ""
 echo -e "  Open the Panel URL in your browser to create your admin account."
 echo ""
-echo -e "  Agent status: $(systemctl is-active opterius-agent)"
-echo -e "  Cron status:  $([ -f /etc/cron.d/opterius ] && echo 'installed' || echo 'MISSING')"
+echo -e "  Agent status: $(systemctl is-active realpanel-agent)"
+echo -e "  Cron status:  $([ -f /etc/cron.d/realpanel ] && echo 'installed' || echo 'MISSING')"
 echo ""
 if [[ "$PANEL_SCHEME" == "http" ]]; then
     echo -e "${YELLOW}  Note: The panel is running over HTTP. To enable HTTPS, point${NC}"

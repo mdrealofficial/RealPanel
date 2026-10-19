@@ -441,7 +441,7 @@
                             <svg class="w-4 h-4 text-gray-300 group-hover:text-violet-500 group-hover:translate-x-0.5 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         </a>
 
-                        <a href="{{ str_replace('SERVER_IP', $myDomains->first()?->account?->server?->ip_address ?? 'localhost', config('opterius.webmail_url', 'http://SERVER_IP:8090')) }}" target="_blank"
+                        <a href="{{ str_replace('SERVER_IP', $myDomains->first()?->account?->server?->ip_address ?? 'localhost', config('realpanel.webmail_url', 'http://SERVER_IP:8090')) }}" target="_blank"
                            x-show="search === '' || 'webmail roundcube inbox client'.includes(search.toLowerCase())"
                            class="group flex items-center gap-3.5 p-3 rounded-xl border border-gray-100 bg-gray-50/60 hover:bg-white hover:border-orange-300 hover:shadow-md transition-all">
                             <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">

@@ -1,7 +1,7 @@
                     GNU AFFERO GENERAL PUBLIC LICENSE
                        Version 3, 19 November 2007
 
- Copyright (C) 2025-2026 Host Server SRL (Opterius)
+ Copyright (C) 2025-2026 RealPanel
 
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU Affero General Public License as published
@@ -19,13 +19,12 @@
  Additional permission under GNU AGPL version 3 section 7:
 
  If you modify this Program, or any covered work, by linking or combining
- it with the Opterius Agent (which is not included in this distribution
+ it with the RealPanel Agent (which is not included in this distribution
  and is separately licensed), the licensors of this Program grant you
  additional permission to convey the resulting work.
 
- The Opterius Agent is a separate closed-source binary distributed under
- a commercial license by Host Server SRL. A free license is available
- for personal and small-business use (up to 5 hosting accounts).
+ The RealPanel Agent is a separate binary distributed by RealPanel.
+ A free license is available for personal and small-business use.
 
  For the full AGPL-3.0 license text, see:
  https://www.gnu.org/licenses/agpl-3.0.html
