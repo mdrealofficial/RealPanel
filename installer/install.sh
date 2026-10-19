@@ -514,10 +514,12 @@ chown -R www-data:www-data ${PMA_DIR}
 chmod -R 755 ${PMA_DIR}
 chmod 770 ${PMA_DIR}/tmp
 
-# Configure Nginx for phpMyAdmin (port 8081)
+# Determine PHP-FPM socket for phpMyAdmin
 if [[ "$PKG_MANAGER" == "apt" ]]; then
+    PMA_FPM_SOCK="/run/php/php${PHP_VERSION}-fpm.sock"
     PMA_VHOST="/etc/nginx/sites-available/phpmyadmin.conf"
 else
+    PMA_FPM_SOCK="/run/php-fpm/www.sock"
     PMA_VHOST="/etc/nginx/conf.d/phpmyadmin.conf"
 fi
 
@@ -535,7 +537,7 @@ server {
     }
 
     location ~ \.php\$ {
-        fastcgi_pass unix:${RC_FPM_SOCK};
+        fastcgi_pass unix:${PMA_FPM_SOCK};
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         include fastcgi_params;
     }
@@ -960,7 +962,7 @@ server {
     }
 
     location ~ \.php\$ {
-        fastcgi_pass unix:${RC_FPM_SOCK};
+        fastcgi_pass unix:${PMA_FPM_SOCK};
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         include fastcgi_params;
     }
