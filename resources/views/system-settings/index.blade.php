@@ -158,6 +158,9 @@
                         tab: 'unbound',
                         previewOpen: false,
                         previewDevice: 'desktop',
+                        previewUrl: 'https://unassigned-domain.com/',
+                        previewCurrentTitle: 'Unbound Domain',
+                        currentPreviewKey: 'unbound',
                         openPreview(pageKey) {
                             let el = document.getElementById('textarea_' + pageKey);
                             let val = el ? el.value : '';
@@ -166,8 +169,37 @@
                                 .replaceAll('{panel_name}', 'RealPanel')
                                 .replaceAll('{hostname}', window.location.hostname)
                                 .replaceAll('{support_url}', '#');
-                            document.getElementById('preview_iframe').srcdoc = replaced;
+                            this.previewUrl = (pageKey === 'unbound') ? 'https://unassigned-domain.com/'
+                                            : (pageKey === '404') ? 'https://example.com/missing-page'
+                                            : (pageKey === 'suspended') ? 'https://suspended-site.com/'
+                                            : 'https://example.com/';
+                            this.previewCurrentTitle = (pageKey === 'unbound') ? 'Unbound Domain'
+                                                     : (pageKey === 'welcome') ? 'Connected Domain (Welcome)'
+                                                     : (pageKey === '404') ? 'Server 404 Error'
+                                                     : 'Stop / Suspended Page';
+                            this.currentPreviewKey = pageKey;
                             this.previewOpen = true;
+                            this.$nextTick(() => {
+                                let iframe = document.getElementById('preview_iframe');
+                                if (iframe) {
+                                    iframe.srcdoc = replaced;
+                                }
+                            });
+                        },
+                        openInNewTab() {
+                            let el = document.getElementById('textarea_' + this.currentPreviewKey);
+                            let val = el ? el.value : '';
+                            let replaced = val
+                                .replaceAll('{domain}', 'example.com')
+                                .replaceAll('{panel_name}', 'RealPanel')
+                                .replaceAll('{hostname}', window.location.hostname)
+                                .replaceAll('{support_url}', '#');
+                            let win = window.open('', '_blank');
+                            if (win) {
+                                win.document.open();
+                                win.document.write(replaced);
+                                win.document.close();
+                            }
                         }
                     }">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -375,40 +407,87 @@
 
                         {{-- Live Preview Modal --}}
                         <div x-show="previewOpen" style="display: none;"
-                             class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                             class="fixed inset-0 z-50 overflow-hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-6"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95">
                             <div @click.away="previewOpen = false"
-                                 class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-5xl overflow-hidden flex flex-col h-[85vh]">
-                                <div class="px-5 py-3.5 bg-gray-100 border-b border-gray-200 flex items-center justify-between">
+                                 class="bg-gray-900 rounded-2xl shadow-2xl border border-gray-700/80 overflow-hidden flex flex-col"
+                                 style="width: 96vw; max-width: 1300px; height: 90vh; max-height: 920px; min-height: 580px;">
+
+                                {{-- Browser Chrome Header --}}
+                                <div class="px-4 py-3 bg-gray-800/95 border-b border-gray-700 flex items-center justify-between gap-4 shrink-0">
+                                    {{-- Traffic light dots & Title --}}
                                     <div class="flex items-center gap-3">
-                                        <span class="text-sm font-semibold text-gray-800">Template Live Preview</span>
-                                        <div class="flex items-center bg-gray-200 rounded-lg p-0.5 text-xs">
-                                            <button type="button" @click="previewDevice = 'desktop'"
-                                                    :class="previewDevice === 'desktop' ? 'bg-white shadow-sm font-semibold text-gray-800' : 'text-gray-500 hover:text-gray-700'"
-                                                    class="px-2.5 py-1 rounded-md transition">Desktop</button>
-                                            <button type="button" @click="previewDevice = 'tablet'"
-                                                    :class="previewDevice === 'tablet' ? 'bg-white shadow-sm font-semibold text-gray-800' : 'text-gray-500 hover:text-gray-700'"
-                                                    class="px-2.5 py-1 rounded-md transition">Tablet</button>
-                                            <button type="button" @click="previewDevice = 'mobile'"
-                                                    :class="previewDevice === 'mobile' ? 'bg-white shadow-sm font-semibold text-gray-800' : 'text-gray-500 hover:text-gray-700'"
-                                                    class="px-2.5 py-1 rounded-md transition">Mobile</button>
+                                        <div class="flex items-center gap-1.5">
+                                            <button type="button" @click="previewOpen = false" class="w-3 h-3 rounded-full bg-red-500 hover:opacity-80 transition cursor-pointer" title="Close"></button>
+                                            <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                                            <span class="w-3 h-3 rounded-full bg-green-500"></span>
                                         </div>
+                                        <span class="text-xs font-semibold text-gray-300 hidden sm:inline" x-text="previewCurrentTitle"></span>
                                     </div>
-                                    <button type="button" @click="previewOpen = false" class="text-gray-400 hover:text-gray-600 transition">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                    </button>
-                                </div>
-                                <div class="flex-1 bg-gray-900/10 p-4 flex items-center justify-center overflow-auto">
-                                    <div :class="{
-                                        'w-full h-full': previewDevice === 'desktop',
-                                        'w-[768px] h-full shadow-lg rounded-xl overflow-hidden border border-gray-300': previewDevice === 'tablet',
-                                        'w-[375px] h-full shadow-lg rounded-xl overflow-hidden border border-gray-300': previewDevice === 'mobile'
-                                    }" class="bg-white transition-all duration-200">
-                                        <iframe id="preview_iframe" class="w-full h-full border-0" sandbox="allow-same-origin allow-scripts"></iframe>
+
+                                    {{-- Simulated URL Bar --}}
+                                    <div class="flex-1 max-w-xl mx-auto flex items-center bg-gray-950/80 border border-gray-700 rounded-lg px-3 py-1.5 text-xs text-gray-300 font-mono shadow-inner overflow-hidden">
+                                        <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                        <span class="truncate" x-text="previewUrl"></span>
+                                    </div>
+
+                                    {{-- Controls: Viewport switch + Fullscreen new tab + Close --}}
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex items-center bg-gray-950 rounded-lg p-0.5 text-xs border border-gray-700">
+                                            <button type="button" @click="previewDevice = 'desktop'"
+                                                    :class="previewDevice === 'desktop' ? 'bg-indigo-600 text-white font-semibold' : 'text-gray-400 hover:text-gray-200'"
+                                                    class="px-2.5 py-1 rounded-md transition flex items-center gap-1.5">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                                <span class="hidden md:inline">Desktop</span>
+                                            </button>
+                                            <button type="button" @click="previewDevice = 'tablet'"
+                                                    :class="previewDevice === 'tablet' ? 'bg-indigo-600 text-white font-semibold' : 'text-gray-400 hover:text-gray-200'"
+                                                    class="px-2.5 py-1 rounded-md transition flex items-center gap-1.5">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                                <span class="hidden md:inline">Tablet</span>
+                                            </button>
+                                            <button type="button" @click="previewDevice = 'mobile'"
+                                                    :class="previewDevice === 'mobile' ? 'bg-indigo-600 text-white font-semibold' : 'text-gray-400 hover:text-gray-200'"
+                                                    class="px-2.5 py-1 rounded-md transition flex items-center gap-1.5">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                                <span class="hidden md:inline">Mobile</span>
+                                            </button>
+                                        </div>
+
+                                        <button type="button" @click="openInNewTab()"
+                                                class="px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white rounded-lg border border-gray-700 text-xs font-medium flex items-center gap-1 transition" title="Open preview in new tab">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                            <span class="hidden sm:inline">New Tab</span>
+                                        </button>
+
+                                        <button type="button" @click="previewOpen = false" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="px-5 py-3 bg-gray-50 border-t border-gray-200 flex justify-end">
+
+                                {{-- Main Canvas area --}}
+                                <div class="bg-gray-950 p-2 sm:p-4 overflow-auto flex-1 flex items-center justify-center" style="min-height: 0; flex: 1 1 0%;">
+                                    <div :style="previewDevice === 'desktop' ? 'width: 100%; height: 100%;' : (previewDevice === 'tablet' ? 'width: 768px; height: 100%; max-width: 100%;' : 'width: 375px; height: 100%; max-width: 100%;')"
+                                         class="bg-black rounded-xl overflow-hidden border border-gray-800 shadow-2xl flex flex-col transition-all duration-300"
+                                         style="height: 100%; min-height: 100%;">
+                                        <iframe id="preview_iframe"
+                                                class="w-full h-full border-0 block"
+                                                style="width: 100%; height: 100%; flex: 1 1 0%; min-height: 100%; border: none;"
+                                                sandbox="allow-same-origin allow-scripts"></iframe>
+                                    </div>
+                                </div>
+
+                                {{-- Footer Bar --}}
+                                <div class="px-5 py-2.5 bg-gray-900 border-t border-gray-800 flex items-center justify-between text-xs text-gray-400 shrink-0">
+                                    <span>Live preview using sample data (<code>example.com</code>, <code>RealPanel</code>)</span>
                                     <button type="button" @click="previewOpen = false"
-                                            class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg hover:bg-gray-300 transition">
+                                            class="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium rounded-lg border border-gray-700 transition">
                                         {{ __('system-settings.close_preview') }}
                                     </button>
                                 </div>

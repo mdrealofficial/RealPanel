@@ -10,6 +10,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.46] - 2026-10-20
+
+### Fixed — Live Preview Modal Sizing & Experience
+- **Expansive Modal Dimensions**: Replaced purged arbitrary height classes with guaranteed 90vh viewport sizing and flexible layout so the preview iframe never collapses.
+- **Simulated Browser Chrome**: Added realistic browser address bar with SSL indicator, traffic light controls, and page title.
+- **Multi-Device Emulation**: Seamless desktop (100%), tablet (768px), and mobile (375px) responsive testing.
+- **Open in New Tab**: Added one-click action to view the rendered template full screen in a new browser tab.
+
+---
+
 ## [2.9.45] - 2026-10-20
 
 ### Added — Customizable Server Pages & Automatic Default Server Routing
