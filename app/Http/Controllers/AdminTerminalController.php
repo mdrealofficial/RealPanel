@@ -19,8 +19,8 @@ class AdminTerminalController extends Controller
             abort(403, 'Unauthorized. Root terminal access is restricted to administrators.');
         }
 
-        // Get the primary local server (or default server)
-        $server = Server::where('is_local', true)->first() ?? Server::first();
+        // Get the server (first server in system, if any)
+        $server = Server::first();
 
         // Terminal path configured via Nginx reverse proxy
         $terminalUrl = '/terminal-root/';
