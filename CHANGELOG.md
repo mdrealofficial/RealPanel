@@ -12,6 +12,18 @@ Each release ships panel and agent together under the same version number.
 
 ---
 
+## [2.9.40] - 2026-10-20
+
+### Added & Changed
+- **Full Brand Rebrand**: Complete rebranding to RealPanel across all interfaces, configs (`config/realpanel.php`), agent binary (`realpanel-agent`), and installers.
+- **Root Web Terminal**: Direct interactive root bash shell (`ttyd`) accessible in the browser for administrators.
+- **Fixed Terminal Hostname Badge**: Correctly renders server hostname in the web terminal header.
+- **Top Quick Actions**: One-click "Clear Cache" and "Migrate DB" buttons directly in the top navigation bar.
+- **Self-Healing Updates**: Auto-updater automatically applies PowerDNS 4.8 schema migrations, resolves systemd-resolved port 53 conflicts, installs `ttyd`, and recompiles the Go agent.
+- **Force Update**: Allows triggering an immediate full panel and agent update from the Updates page anytime.
+
+---
+
 ## [2.2.5] - 2026-04-21
 
 ### Added — Analytics
