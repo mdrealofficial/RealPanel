@@ -13,7 +13,7 @@
             <div class="flex items-center gap-2">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
                     <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span>
-                    root@{{ gethostname() }}
+                    {{ 'root@' . (gethostname() ?: 'localhost') }}
                 </span>
                 <button type="button" onclick="document.getElementById('terminal-frame').src = document.getElementById('terminal-frame').src;"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-medium rounded-lg shadow-sm transition">
