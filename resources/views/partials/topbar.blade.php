@@ -103,7 +103,29 @@
             </form>
         @endif
         @if(Auth::user()->isAdmin())
-            <a href="{{ route('admin.terminal.index') }}" title="Root Terminal"
+            <!-- Clear Caches Form -->
+            <form method="POST" action="{{ route('admin.maintenance.clear-cache') }}" class="inline"
+                  onsubmit="return confirm('Clear all application, view, route, and config caches?');">
+                @csrf
+                <button type="submit" title="Clear All Caches (Config, Routes, Views)"
+                   class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg transition">
+                    <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    <span>Clear Cache</span>
+                </button>
+            </form>
+
+            <!-- Force DB Migration Form -->
+            <form method="POST" action="{{ route('admin.maintenance.migrate') }}" class="inline"
+                  onsubmit="return confirm('Run all pending database migrations (--force)?');">
+                @csrf
+                <button type="submit" title="Force Database Migrations"
+                   class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg transition">
+                    <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
+                    <span>Migrate DB</span>
+                </button>
+            </form>
+
+            <a href="{{ route('admin.terminal.index') }}" title="Root Web Terminal"
                class="p-2 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
                target="_blank">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>

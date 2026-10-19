@@ -181,6 +181,10 @@ Route::middleware([
         Route::get('/terminal', [\App\Http\Controllers\AdminTerminalController::class, 'index'])->name('terminal.index');
         Route::get('/terminal/auth-check', [\App\Http\Controllers\AdminTerminalController::class, 'checkAuth'])->name('terminal.auth');
 
+        // Quick Maintenance Actions (Administrator Only)
+        Route::post('/maintenance/clear-cache', [\App\Http\Controllers\MaintenanceController::class, 'clearCache'])->name('maintenance.clear-cache');
+        Route::post('/maintenance/migrate', [\App\Http\Controllers\MaintenanceController::class, 'migrate'])->name('maintenance.migrate');
+
         // Panel Hostname (one-click switch from IP to subdomain + Let's Encrypt)
         Route::get('/panel-hostname', [\App\Http\Controllers\PanelHostnameController::class, 'index'])->name('panel-hostname.index');
         Route::post('/panel-hostname', [\App\Http\Controllers\PanelHostnameController::class, 'update'])->name('panel-hostname.update');
