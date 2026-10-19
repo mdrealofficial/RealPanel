@@ -315,13 +315,17 @@ USE pdns;
 CREATE TABLE IF NOT EXISTS domains (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    type VARCHAR(6) NOT NULL DEFAULT 'NATIVE',
-    notified_serial INT DEFAULT NULL,
-    account VARCHAR(40) DEFAULT NULL
-);
+    master VARCHAR(128) DEFAULT NULL,
+    last_check INT DEFAULT NULL,
+    type VARCHAR(8) NOT NULL DEFAULT 'NATIVE',
+    notified_serial INT UNSIGNED DEFAULT NULL,
+    account VARCHAR(40) DEFAULT NULL,
+    options VARCHAR(64000) DEFAULT NULL,
+    catalog VARCHAR(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS records (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     domain_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     type VARCHAR(10) NOT NULL,
@@ -329,11 +333,47 @@ CREATE TABLE IF NOT EXISTS records (
     ttl INT DEFAULT 3600,
     prio INT DEFAULT 0,
     disabled TINYINT(1) DEFAULT 0,
+    ordername VARCHAR(255) BINARY DEFAULT NULL,
+    auth TINYINT(1) DEFAULT 1,
     FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE INDEX IF NOT EXISTS idx_records_domain_id ON records(domain_id);
 CREATE INDEX IF NOT EXISTS idx_records_name_type ON records(name, type);
+CREATE INDEX IF NOT EXISTS idx_records_ordername ON records(ordername);
+
+CREATE TABLE IF NOT EXISTS comments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    domain_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    type VARCHAR(10) NOT NULL,
+    modified_at INT NOT NULL,
+    account VARCHAR(40) DEFAULT NULL,
+    comment TEXT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS domainmetadata (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    domain_id INT NOT NULL,
+    kind VARCHAR(32),
+    content TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS cryptokeys (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    domain_id INT NOT NULL,
+    flags INT NOT NULL,
+    active BOOL,
+    published BOOL DEFAULT 1,
+    content TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS tsigkeys (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    algorithm VARCHAR(50),
+    secret VARCHAR(255)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 EOSQL_PDNS
 
 # Configure PowerDNS
