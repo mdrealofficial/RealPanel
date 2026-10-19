@@ -350,6 +350,18 @@ setgid=pdns
 setuid=pdns
 EOPDNS
 
+# On Ubuntu/Debian, systemd-resolved occupies port 53 on 127.0.0.53:53 by default.
+# Disable DNSStubListener so PowerDNS can bind to port 53.
+if systemctl is-active --quiet systemd-resolved 2>/dev/null || [ -d /etc/systemd/resolved.conf.d ]; then
+    mkdir -p /etc/systemd/resolved.conf.d
+    cat > /etc/systemd/resolved.conf.d/10-powerdns.conf <<'EORESOLV'
+[Resolve]
+DNSStubListener=no
+EORESOLV
+    ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf 2>/dev/null || true
+    systemctl restart systemd-resolved 2>/dev/null || true
+fi
+
 systemctl enable --now pdns
 ok "PowerDNS installed and configured"
 
