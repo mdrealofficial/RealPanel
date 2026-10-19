@@ -783,9 +783,10 @@ npm run build
 # Admin account is created via the web setup wizard on first browser visit.
 # No CLI account creation needed.
 
-# Set ownership
+# Set ownership and git safe directory
 chown -R www-data:www-data "$PANEL_DIR" 2>/dev/null || chown -R nginx:nginx "$PANEL_DIR"
 chmod -R 775 "$PANEL_DIR/storage" "$PANEL_DIR/bootstrap/cache"
+git config --global --add safe.directory "$PANEL_DIR"
 
 # Install Laravel scheduler cron — runs every minute and triggers all
 # scheduled commands (monitor:collect, alerts:check, etc). Without this,
