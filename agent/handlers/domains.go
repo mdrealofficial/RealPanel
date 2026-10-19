@@ -78,10 +78,23 @@ func DomainCreateHandler(w http.ResponseWriter, r *http.Request) {
 	nginxConf := fmt.Sprintf(`server {
     listen 80;
     listen [::]:80;
-    server_name %s www.%s;
+    server_name %s www.%s cpanel.%s webmail.%s mail.%s ftp.%s;
 
     root %s;
     index index.php index.html index.htm;
+
+    location ^~ /.well-known/acme-challenge/ {
+        allow all;
+        default_type "text/plain";
+    }
+
+    if ($host ~* ^cpanel\.) {
+        return 302 https://$host:8443;
+    }
+
+    if ($host ~* ^webmail\.) {
+        return 302 http://$host:8090;
+    }
 
     location / {
         try_files $uri $uri/ /index.php?$query_string;
@@ -97,7 +110,7 @@ func DomainCreateHandler(w http.ResponseWriter, r *http.Request) {
         deny all;
     }
 }
-`, req.Domain, req.Domain, req.DocumentRoot, req.PhpVersion)
+`, req.Domain, req.Domain, req.Domain, req.Domain, req.Domain, req.Domain, req.DocumentRoot, req.PhpVersion)
 
 	availablePath := fmt.Sprintf("/etc/nginx/sites-available/%s.conf", req.Domain)
 	enabledPath := fmt.Sprintf("/etc/nginx/sites-enabled/%s.conf", req.Domain)

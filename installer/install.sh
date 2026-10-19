@@ -419,10 +419,41 @@ if [[ "$PKG_MANAGER" == "apt" ]]; then
     # Preconfigure Postfix to avoid interactive prompts
     debconf-set-selections <<< "postfix postfix/main_mailer_type select Internet Site"
     debconf-set-selections <<< "postfix postfix/mailname string $(hostname -f)"
-    apt-get install -y -qq postfix dovecot-core dovecot-imapd dovecot-pop3d dovecot-lmtpd
+    apt-get install -y -qq postfix dovecot-core dovecot-imapd dovecot-pop3d dovecot-lmtpd opendkim opendkim-tools
 else
-    dnf install -y -q postfix dovecot
+    dnf install -y -q postfix dovecot opendkim opendkim-tools
 fi
+
+# Create OpenDKIM directories and configuration
+mkdir -p /etc/opendkim/keys
+touch /etc/opendkim/signing_table
+touch /etc/opendkim/key_table
+cat > /etc/opendkim/trusted_hosts <<'EODKIMHOSTS'
+127.0.0.1
+localhost
+::1
+EODKIMHOSTS
+
+cat > /etc/opendkim.conf <<'EODKIM'
+AutoRestart             Yes
+AutoRestartRate         10/1h
+Syslog                  Yes
+SyslogSuccess           Yes
+LogWhy                  Yes
+UserID                  opendkim:opendkim
+Socket                  inet:8891@127.0.0.1
+Umask                   002
+Canonicalization        relaxed/simple
+Mode                    sv
+SubDomains              no
+KeyTable                /etc/opendkim/key_table
+SigningTable            refile:/etc/opendkim/signing_table
+ExternalIgnoreList      refile:/etc/opendkim/trusted_hosts
+InternalHosts           refile:/etc/opendkim/trusted_hosts
+EODKIM
+
+chown -R opendkim:opendkim /etc/opendkim 2>/dev/null || true
+systemctl enable --now opendkim 2>/dev/null || true
 
 # Create virtual mailbox and domain files
 touch /etc/postfix/vmailbox
@@ -449,6 +480,10 @@ postconf -e "smtpd_sasl_path = private/auth"
 postconf -e "smtpd_sasl_auth_enable = yes"
 postconf -e "smtpd_recipient_restrictions = permit_sasl_authenticated,permit_mynetworks,reject_unauth_destination"
 postconf -e "message_size_limit = 52428800"
+postconf -e "milter_default_action = accept"
+postconf -e "milter_protocol = 6"
+postconf -e "smtpd_milters = inet:127.0.0.1:8891"
+postconf -e "non_smtpd_milters = inet:127.0.0.1:8891"
 
 # Build Postfix maps
 postmap /etc/postfix/vmailbox

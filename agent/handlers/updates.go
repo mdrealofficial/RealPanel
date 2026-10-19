@@ -178,6 +178,57 @@ EORESOLV
     systemctl restart pdns 2>/dev/null || true
 fi
 
+# --- OpenDKIM Setup & Fixes ---
+if ! command -v opendkim >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq opendkim opendkim-tools
+    elif command -v dnf >/dev/null 2>&1; then
+        dnf install -y -q opendkim opendkim-tools
+    fi
+fi
+
+if [ -f /etc/opendkim.conf ] || command -v opendkim >/dev/null 2>&1; then
+    mkdir -p /etc/opendkim/keys
+    touch /etc/opendkim/signing_table
+    touch /etc/opendkim/key_table
+    if [ ! -f /etc/opendkim/trusted_hosts ]; then
+        cat > /etc/opendkim/trusted_hosts <<'EODKIMHOSTS'
+127.0.0.1
+localhost
+::1
+EODKIMHOSTS
+    fi
+
+    cat > /etc/opendkim.conf <<'EODKIM'
+AutoRestart             Yes
+AutoRestartRate         10/1h
+Syslog                  Yes
+SyslogSuccess           Yes
+LogWhy                  Yes
+UserID                  opendkim:opendkim
+Socket                  inet:8891@127.0.0.1
+Umask                   002
+Canonicalization        relaxed/simple
+Mode                    sv
+SubDomains              no
+KeyTable                /etc/opendkim/key_table
+SigningTable            refile:/etc/opendkim/signing_table
+ExternalIgnoreList      refile:/etc/opendkim/trusted_hosts
+InternalHosts           refile:/etc/opendkim/trusted_hosts
+EODKIM
+
+    chown -R opendkim:opendkim /etc/opendkim 2>/dev/null || true
+    systemctl restart opendkim 2>/dev/null || systemctl start opendkim 2>/dev/null || true
+
+    if command -v postconf >/dev/null 2>&1; then
+        postconf -e "milter_default_action = accept"
+        postconf -e "milter_protocol = 6"
+        postconf -e "smtpd_milters = inet:127.0.0.1:8891"
+        postconf -e "non_smtpd_milters = inet:127.0.0.1:8891"
+        systemctl reload postfix 2>/dev/null || true
+    fi
+fi
+
 # --- ttyd Web Terminal Ensure ---
 if [ ! -f /usr/local/bin/ttyd ]; then
     ARCH=$(uname -m)

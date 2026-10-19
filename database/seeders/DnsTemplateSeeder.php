@@ -25,6 +25,9 @@ class DnsTemplateSeeder extends Seeder
                     ['name' => '{domain}', 'type' => 'MX', 'content' => 'mail.{domain}.', 'ttl' => 3600, 'priority' => 10],
                     ['name' => '{domain}', 'type' => 'TXT', 'content' => 'v=spf1 a mx ip4:{ip} ~all', 'ttl' => 3600, 'priority' => 0],
                     ['name' => '_dmarc.{domain}', 'type' => 'TXT', 'content' => 'v=DMARC1; p=quarantine; sp=none; aspf=r; adkim=r;', 'ttl' => 3600, 'priority' => 0],
+                    ['name' => 'default._domainkey.{domain}', 'type' => 'TXT', 'content' => '{dkim}', 'ttl' => 3600, 'priority' => 0],
+                    ['name' => 'autoconfig.{domain}', 'type' => 'CNAME', 'content' => 'mail.{domain}.', 'ttl' => 3600, 'priority' => 0],
+                    ['name' => 'autodiscover.{domain}', 'type' => 'CNAME', 'content' => 'mail.{domain}.', 'ttl' => 3600, 'priority' => 0],
                 ],
             ],
             [

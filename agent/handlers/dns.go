@@ -73,6 +73,7 @@ func DnsCreateZoneHandler(w http.ResponseWriter, r *http.Request) {
 		soa := fmt.Sprintf("%s hostmaster.%s 1 10800 3600 604800 3600", req.NS1, req.Domain)
 		system.ExecCommand("mysql", "-e", fmt.Sprintf("INSERT IGNORE INTO pdns.records (domain_id, name, type, content, ttl) VALUES (%s, '%s', 'SOA', '%s', 3600);", domainIdStr, req.Domain, soa))
 
+		hasDkim := false
 		if len(req.Records) > 0 {
 			for _, rec := range req.Records {
 				if rec.Name == "" || rec.Type == "" || rec.Content == "" {
@@ -82,7 +83,17 @@ func DnsCreateZoneHandler(w http.ResponseWriter, r *http.Request) {
 				if ttl <= 0 {
 					ttl = 3600
 				}
-				escapedContent := strings.ReplaceAll(rec.Content, "'", "\\'")
+				content := rec.Content
+				if strings.Contains(rec.Name, "_domainkey") {
+					hasDkim = true
+					if strings.Contains(content, "{dkim}") {
+						_, dkimTxt, err := GenerateDkimKey(req.Domain)
+						if err == nil && dkimTxt != "" {
+							content = strings.ReplaceAll(content, "{dkim}", dkimTxt)
+						}
+					}
+				}
+				escapedContent := strings.ReplaceAll(content, "'", "\\'")
 				escapedName := strings.ReplaceAll(rec.Name, "'", "\\'")
 				recQuery := fmt.Sprintf("INSERT IGNORE INTO pdns.records (domain_id, name, type, content, ttl, prio) VALUES (%s, '%s', '%s', '%s', %d, %d);",
 					domainIdStr, escapedName, rec.Type, escapedContent, ttl, rec.Priority)
@@ -102,6 +113,11 @@ INSERT IGNORE INTO pdns.records (domain_id, name, type, content, ttl) VALUES (%s
 				domainIdStr, req.Domain, req.ServerIP)
 
 			system.ExecCommand("mysql", "-e", recordsQuery)
+		}
+
+		// Ensure DKIM key and record are always created for new zones
+		if !hasDkim {
+			go GenerateDkimKey(req.Domain)
 		}
 	}
 

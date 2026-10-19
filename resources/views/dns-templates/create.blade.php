@@ -57,7 +57,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <h3 class="text-base font-semibold text-gray-800">DNS Records</h3>
-                            <p class="text-sm text-gray-500 mt-1">Use variables: <code class="bg-gray-100 px-1 rounded text-xs">{domain}</code> <code class="bg-gray-100 px-1 rounded text-xs">{ip}</code> <code class="bg-gray-100 px-1 rounded text-xs">{ns1}</code> <code class="bg-gray-100 px-1 rounded text-xs">{ns2}</code></p>
+                            <p class="text-sm text-gray-500 mt-1">Use variables: <code class="bg-gray-100 px-1 rounded text-xs">{domain}</code> <code class="bg-gray-100 px-1 rounded text-xs">{ip}</code> <code class="bg-gray-100 px-1 rounded text-xs">{ns1}</code> <code class="bg-gray-100 px-1 rounded text-xs">{ns2}</code> <code class="bg-gray-100 px-1 rounded text-xs">{dkim}</code></p>
                         </div>
                         <button type="button" @click="addRecord()" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add Record</button>
                     </div>

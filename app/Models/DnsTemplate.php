@@ -24,7 +24,7 @@ class DnsTemplate extends Model
 
     /**
      * Replace template variables in records.
-     * Variables: {domain}, {ip}, {ns1}, {ns2}
+     * Variables: {domain}, {ip}, {ns1}, {ns2}, {dkim}
      */
     public function resolveRecords(string $domain, string $serverIp): array
     {

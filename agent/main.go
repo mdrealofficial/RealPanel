@@ -60,11 +60,15 @@ func main() {
 	mux.HandleFunc("/email/create", handlers.EmailCreateHandler)
 	mux.HandleFunc("/email/password", handlers.EmailPasswordHandler)
 	mux.HandleFunc("/email/delete", handlers.EmailDeleteHandler)
+	mux.HandleFunc("/email/dkim-generate", handlers.EmailDkimGenerateHandler)
+	mux.HandleFunc("/email/dkim-get", handlers.EmailDkimGetHandler)
 
 	// 5. SSL & Certificates
 	mux.HandleFunc("/ssl/status", handlers.SslStatusHandler)
 	mux.HandleFunc("/ssl/issue-async", handlers.SslIssueAsyncHandler)
 	mux.HandleFunc("/ssl/upload", handlers.SslUploadHandler)
+	mux.HandleFunc("/ssl/renew", handlers.SslRenewHandler)
+	mux.HandleFunc("/ssl/delete", handlers.SslDeleteHandler)
 	mux.HandleFunc("/ssl/progress", handlers.SslProgressHandler)
 	mux.HandleFunc("/panel/set-hostname", handlers.PanelSetHostnameHandler)
 

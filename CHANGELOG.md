@@ -10,6 +10,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.44] - 2026-10-20
+
+### Added — Automated DKIM & Multi-Subdomain SSL
+- **Automated OpenDKIM Integration**:
+  - Automatically installs and configures OpenDKIM and connects it with Postfix via milters.
+  - Automatically generates 2048-bit RSA keys (`default` selector) for domains and creates the `default._domainkey.{domain}` TXT record in PowerDNS.
+  - Added agent endpoints `/email/dkim-generate` and `/email/dkim-get`.
+- **Multi-Subdomain SAN SSL**:
+  - Certbot now automatically requests certificates covering the primary domain, `www`, and core subdomains: `cpanel.{domain}`, `webmail.{domain}`, `mail.{domain}`, and `ftp.{domain}`.
+  - Seamless fallback to apex + `www` if any individual subdomain is not yet pointed in external DNS.
+  - Nginx vhosts automatically configure ACME challenge locations, and friendly HTTPS redirects for `cpanel` (to panel port 8443) and `webmail` (to port 8090).
+  - Dovecot SNI automatically updated with the issued certificate for `mail.{domain}`.
+- **Enhanced Standard DNS Template**:
+  - `Standard (Web & Mail)` template updated with `default._domainkey.{domain}` TXT (`{dkim}`), `autoconfig.{domain}`, and `autodiscover.{domain}` records.
+  - Added database migration `2026_05_13_000002_add_dkim_to_dns_templates.php` to update existing installations automatically.
+
+---
+
 ## [2.9.43] - 2026-10-20
 
 ### Added — Configurable Default Nameservers
