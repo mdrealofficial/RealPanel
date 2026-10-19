@@ -115,6 +115,16 @@ if [ -d /etc/opterius ] && [ ! -d /etc/realpanel ]; then
     ln -sfn /etc/realpanel /etc/opterius 2>/dev/null || true
 fi
 
+# Ensure backup directory structure
+mkdir -p /var/backups/realpanel
+chmod 0750 /var/backups/realpanel
+if [ -d /var/backups/opterius ] && [ ! -e /var/backups/realpanel ]; then
+    ln -sfn /var/backups/opterius /var/backups/realpanel 2>/dev/null || true
+fi
+if [ -d /var/backups/realpanel ] && [ ! -e /var/backups/opterius ]; then
+    ln -sfn /var/backups/realpanel /var/backups/opterius 2>/dev/null || true
+fi
+
 # --- PowerDNS Database Schema & Fixes ---
 if command -v mysql >/dev/null 2>&1 && mysql -u root -e "USE pdns;" >/dev/null 2>&1; then
     mysql -u root <<'EOSQL' >/dev/null 2>&1 || true

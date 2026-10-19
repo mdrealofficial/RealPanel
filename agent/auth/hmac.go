@@ -15,7 +15,7 @@ import (
 func Middleware(secret string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Whitelist unauthenticated public endpoints
-		if r.URL.Path == "/health" || r.URL.Path == "/metrics/realtime" {
+		if r.URL.Path == "/health" || r.URL.Path == "/metrics/realtime" || r.URL.Path == "/backup/download" {
 			next.ServeHTTP(w, r)
 			return
 		}

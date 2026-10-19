@@ -123,6 +123,15 @@ func main() {
 	mux.HandleFunc("/services/list", handlers.ServicesListHandler)
 	mux.HandleFunc("/services/action", handlers.ServiceActionHandler)
 
+	// 12. Backups
+	mux.HandleFunc("/backup/create", handlers.BackupCreateHandler)
+	mux.HandleFunc("/backup/list", handlers.BackupListHandler)
+	mux.HandleFunc("/backup/restore", handlers.BackupRestoreHandler)
+	mux.HandleFunc("/backup/delete", handlers.BackupDeleteHandler)
+	mux.HandleFunc("/backup/download", handlers.BackupDownloadHandler)
+	mux.HandleFunc("/backup/browse", handlers.BackupBrowseHandler)
+	mux.HandleFunc("/backup/restore-files", handlers.BackupRestoreFilesHandler)
+
 	// Default fallback handler for any remaining endpoints
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[INFO] Agent received request: %s %s", r.Method, r.URL.Path)

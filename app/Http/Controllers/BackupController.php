@@ -31,15 +31,18 @@ class BackupController extends Controller
             // Sync with agent's backup list
             $response = AgentService::for($selectedServer)->post('/backup/list', []);
             if ($response && $response->successful()) {
-                $agentBackups = $response->json('backups') ?? [];
+                $agentBackups = (array) ($response->json('backups') ?? []);
                 foreach ($agentBackups as $ab) {
+                    if (!is_array($ab) || empty($ab['filename'])) {
+                        continue;
+                    }
                     if (!$backups->where('filename', $ab['filename'])->first()) {
                         Backup::create([
                             'server_id' => $selectedServer->id,
-                            'username'  => $ab['username'] ?? '',
-                            'filename'  => $ab['filename'],
-                            'type'      => $ab['type'] ?? 'full',
-                            'size_mb'   => $ab['size_mb'] ?? 0,
+                            'username'  => (string) ($ab['username'] ?? ''),
+                            'filename'  => (string) $ab['filename'],
+                            'type'      => (string) ($ab['type'] ?? 'full'),
+                            'size_mb'   => round((float) ($ab['size_mb'] ?? 0), 2),
                             'status'    => 'completed',
                         ]);
                     }
@@ -62,34 +65,42 @@ class BackupController extends Controller
         $server = Server::findOrFail($validated['server_id']);
         $account = Account::with('domains', 'databases')->findOrFail($validated['account_id']);
 
-        $response = AgentService::for($server)->post('/backup/create', [
+        $response = AgentService::for($server)->postLong('/backup/create', [
             'username'  => $account->username,
             'type'      => $validated['type'],
             'databases' => $account->databases->pluck('name')->toArray(),
             'domains'   => $account->domains->pluck('domain')->toArray(),
-        ]);
+        ], 600);
 
         if ($response && $response->successful()) {
-            $data = $response->json();
+            $data = (array) $response->json();
+
+            $sizeMb   = round((float) ($data['size_mb'] ?? $data['size'] ?? 0), 2);
+            $duration = (string) ($data['duration'] ?? '1s');
+            $filename = (string) ($data['filename'] ?? '');
 
             Backup::create([
                 'server_id'  => $server->id,
                 'account_id' => $account->id,
                 'username'   => $account->username,
-                'filename'   => $data['filename'] ?? '',
+                'filename'   => $filename,
                 'type'       => $validated['type'],
-                'size_mb'    => $data['size_mb'] ?? 0,
+                'size_mb'    => $sizeMb,
                 'status'     => 'completed',
             ]);
 
             ActivityLogger::log('backup.created', 'account', $account->id, $account->username,
-                "Created {$validated['type']} backup for {$account->username} ({$data['size_mb']} MB)");
+                "Created {$validated['type']} backup for {$account->username} ({$sizeMb} MB)");
 
             return redirect()->route('admin.backups.index', ['server_id' => $server->id])
-                ->with('success', __('backups.backup_created', ['username' => $account->username, 'size' => $data['size_mb'], 'duration' => $data['duration']]));
+                ->with('success', __('backups.backup_created', [
+                    'username' => $account->username,
+                    'size'     => $sizeMb,
+                    'duration' => $duration,
+                ]));
         }
 
-        $error = $response ? $response->json('error', 'Unknown error') : 'Agent unreachable';
+        $error = $response ? ($response->json('error') ?? $response->json('message') ?? 'Unknown error') : 'Agent unreachable';
         return back()->with('error', __('backups.backup_failed', ['error' => $error]));
     }
 
@@ -97,14 +108,14 @@ class BackupController extends Controller
     {
         $backup->load('server');
 
-        $response = AgentService::for($backup->server)->post('/backup/restore', [
+        $response = AgentService::for($backup->server)->postLong('/backup/restore', [
             'filename' => $backup->filename,
             'username' => $backup->username,
             'type'     => $request->input('type', 'full'),
-        ]);
+        ], 600);
 
         if ($response && $response->successful()) {
-            $restored = $response->json('restored', []);
+            $restored = (array) ($response->json('restored') ?? ['all components']);
             ActivityLogger::log('backup.restored', 'account', $backup->account_id, $backup->username,
                 "Restored backup {$backup->filename}: " . implode(', ', $restored));
 
@@ -112,13 +123,14 @@ class BackupController extends Controller
                 ->with('success', __('backups.restore_successful', ['items' => implode(', ', $restored)]));
         }
 
-        $error = $response ? $response->json('error', 'Unknown error') : 'Agent unreachable';
+        $error = $response ? ($response->json('error') ?? $response->json('message') ?? 'Unknown error') : 'Agent unreachable';
         return back()->with('error', __('backups.restore_failed', ['error' => $error]));
     }
 
     public function download(Backup $backup)
     {
-        $downloadUrl = $backup->server->agent_url . '/backup/download?filename=' . urlencode($backup->filename);
+        $backup->load('server');
+        $downloadUrl = rtrim($backup->server->agent_url, '/') . '/backup/download?filename=' . urlencode($backup->filename);
         return redirect($downloadUrl);
     }
 
@@ -158,9 +170,9 @@ class BackupController extends Controller
         $error   = null;
 
         if ($response && $response->successful()) {
-            $entries = $response->json('entries') ?? [];
+            $entries = (array) ($response->json('entries') ?? []);
         } else {
-            $error = $response?->json('error') ?? 'Agent unreachable';
+            $error = $response?->json('error') ?? $response?->json('message') ?? 'Agent unreachable';
         }
 
         // Build breadcrumbs
@@ -193,22 +205,22 @@ class BackupController extends Controller
 
         $backup->load('server');
 
-        $response = AgentService::for($backup->server)->post('/backup/restore-files', [
+        $response = AgentService::for($backup->server)->postLong('/backup/restore-files', [
             'filename'      => $backup->filename,
             'username'      => $backup->username,
             'document_root' => $data['document_root'],
             'files'         => $data['files'],
             'overwrite'     => (bool) ($data['overwrite'] ?? false),
-        ]);
+        ], 600);
 
         if (! $response || ! $response->successful()) {
-            $error = $response?->json('error') ?? 'Agent unreachable';
+            $error = $response?->json('error') ?? $response?->json('message') ?? 'Agent unreachable';
             return back()->with('error', "Restore failed: {$error}");
         }
 
-        $result = $response->json();
-        $restored = $result['restored'] ?? 0;
-        $skipped  = $result['skipped'] ?? 0;
+        $result = (array) $response->json();
+        $restored = (int) ($result['restored'] ?? 0);
+        $skipped  = (int) ($result['skipped'] ?? 0);
 
         ActivityLogger::log('backup.restored_files', 'account', $backup->account_id, $backup->username,
             "Restored {$restored} file(s) from backup {$backup->filename}", ['files' => $data['files']]);

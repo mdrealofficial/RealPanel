@@ -1311,6 +1311,11 @@ fi
 mkdir -p "$AGENT_CONF_DIR"
 ln -sfn "$AGENT_CONF_DIR" /etc/opterius 2>/dev/null || true
 
+# Setup backup storage directory
+mkdir -p /var/backups/realpanel
+chmod 0750 /var/backups/realpanel
+ln -sfn /var/backups/realpanel /var/backups/opterius 2>/dev/null || true
+
 # Build agent binary directly from open-source repository
 cd "${PANEL_DIR}/agent"
 go build -o "${AGENT_DIR}/realpanel-agent" .

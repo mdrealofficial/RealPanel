@@ -10,6 +10,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.47] - 2026-10-20
+
+### Fixed & Added — Complete RealPanel Backup Subsystem & Safeguards
+- **Agent Backup Handlers**: Implemented missing Go agent endpoints for `/backup/create`, `/backup/list`, `/backup/restore`, `/backup/delete`, `/backup/download`, `/backup/browse`, and `/backup/restore-files` in `agent/handlers/backups.go`.
+- **Archive Architecture**: Backups compress `/home/{username}`, database `.sql` dumps via `mysqldump`, email mailboxes, and Nginx vhost configs into timestamped `.tar.gz` archives in `/var/backups/realpanel/` (with backward-compatible symlinks).
+- **Controller Null-Safety**: Fixed `Undefined array key "size_mb"` in `BackupController.php` with robust null coalescing and type casting for `size_mb`, `duration`, `filename`, and `restored`.
+- **Extended Timeout**: Switched backup creation, restoration, and file restoration to `postLong()` with 600-second timeouts to support large accounts without client timeouts.
+- **Granular File Browsing & Restores**: Added streaming archive inspection via Go's `archive/tar` for zero-extraction browsing and selective single-file/folder restorations.
+- **Whitelisted Direct Downloads**: Added `/backup/download` to agent whitelist with path traversal sanitization for fast browser downloads.
+
+---
+
 ## [2.9.46] - 2026-10-20
 
 ### Fixed — Live Preview Modal Sizing & Experience
