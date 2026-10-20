@@ -125,6 +125,14 @@ if [ -d /var/backups/realpanel ] && [ ! -e /var/backups/opterius ]; then
     ln -sfn /var/backups/realpanel /var/backups/opterius 2>/dev/null || true
 fi
 
+# Ensure Nginx FastCGI timeouts on RealPanel port 8443 (prevents 504 Gateway Timeouts during updates)
+for conf in /etc/nginx/sites-available/realpanel.conf /etc/nginx/conf.d/realpanel.conf; do
+    if [ -f "$conf" ] && ! grep -q "fastcgi_read_timeout" "$conf"; then
+        sed -i '/location ~ \\.php\$/a \        fastcgi_read_timeout 600s;\n        fastcgi_send_timeout 600s;\n        fastcgi_connect_timeout 60s;' "$conf" 2>/dev/null || true
+        nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null || true
+    fi
+done
+
 # --- PowerDNS Database Schema & Fixes ---
 if command -v mysql >/dev/null 2>&1 && mysql -u root -e "USE pdns;" >/dev/null 2>&1; then
     mysql -u root <<'EOSQL' >/dev/null 2>&1 || true

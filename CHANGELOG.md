@@ -10,6 +10,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.56] - 2026-10-20
+
+### Fixed — Prevent 504 Gateway Timeouts During Updates
+- **Nginx FastCGI Timeouts**: Configured `fastcgi_read_timeout 600s`, `fastcgi_send_timeout 600s`, and `fastcgi_connect_timeout 60s` in panel Nginx configuration template (`installer/install.sh` and `agent/handlers/panel_hostname.go`).
+- **Update Controller Timeout**: Increased PHP script time limit (`set_time_limit(600)`) and agent request timeout to 600 seconds in `UpdateController::run()`.
+- **Auto-Maintenance Repair**: Added automatic detection and patching of `/etc/nginx/sites-available/realpanel.conf` during updates to ensure existing installations automatically get generous 600s FastCGI timeouts.
+
 ## [2.9.55] - 2026-10-20
 
 ### Added — cPanel MultiPHP Management & MultiPHP INI Editor

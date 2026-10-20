@@ -81,12 +81,15 @@ class UpdateController extends Controller
      */
     public function run(Request $request)
     {
+        @set_time_limit(600);
+        @ini_set('max_execution_time', '600');
+
         $server = Server::first();
         if (!$server) {
             return back()->with('error', __('servers.no_server_configured'));
         }
 
-        $response = AgentService::for($server)->postLong('/update/run', [], 300);
+        $response = AgentService::for($server)->postLong('/update/run', [], 600);
 
         if ($response && $response->successful()) {
             return redirect()->route('admin.updates.index')->with('success', __('servers.update_completed'));
