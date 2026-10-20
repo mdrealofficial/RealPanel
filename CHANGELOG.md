@@ -10,6 +10,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.55] - 2026-10-20
+
+### Added — cPanel MultiPHP Management & MultiPHP INI Editor
+- **MultiPHP Manager (`/php`)**:
+  - Full domain-level PHP version switching (PHP 8.1 through 8.5) with instant FastCGI socket reassignment and Nginx validation.
+  - Package-level PHP version policy controls (`php_switch_enabled`, restricted version lists).
+  - Quick action to open MultiPHP INI Editor directly from the header.
+- **MultiPHP INI Editor (`/php/ini-editor`)**:
+  - **Basic Mode**: Quick form for core directives (`memory_limit`, `upload_max_filesize`, `post_max_size`, `max_execution_time`, `display_errors`, `allow_url_fopen`).
+  - **Editor (Advanced Mode)**: Direct full-featured text editor for raw php.ini directives with syntax highlighting and comment handling.
+  - **Go Agent Handler `POST /php/ini`**: Persists directives to `/etc/php/{version}/fpm/conf.d/99-domain-{domain}.ini` and triggers zero-downtime PHP-FPM service reload.
+
 ## [2.9.54] - 2026-10-20
 
 ### Added — cPanel Parity Phase 5: Git Version Control & Post-Deploy Automation

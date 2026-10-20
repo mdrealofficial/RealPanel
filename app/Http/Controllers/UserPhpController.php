@@ -168,4 +168,75 @@ class UserPhpController extends Controller
         $error = $response ? $response->json('error', 'Unknown error') : 'Could not connect to server agent';
         return back()->with('error', __('php.failed_to_switch_php', ['error' => $error]));
     }
+
+    /**
+     * GET /php/ini-editor
+     * MultiPHP INI Editor (Basic and Advanced Editor mode like cPanel)
+     */
+    public function iniEditor(Request $request)
+    {
+        $domains = Domain::with('account.server')
+            ->whereIn('account_id', auth()->user()->currentAccountIds())
+            ->where('status', 'active')
+            ->orderBy('domain')
+            ->get();
+
+        $selectedDomainId = $request->get('domain_id', $domains->first()?->id);
+        $selectedDomain = $domains->firstWhere('id', $selectedDomainId) ?? $domains->first();
+
+        $rawIni = '';
+        $directives = [];
+
+        if ($selectedDomain) {
+            $response = AgentService::for($selectedDomain->account->server)->get(
+                '/php/ini?domain=' . urlencode($selectedDomain->domain) . '&version=' . urlencode($selectedDomain->php_version)
+            );
+            if ($response && $response->successful()) {
+                $rawIni = $response->json('content', '');
+            }
+
+            // Also fetch structured values for Basic Mode
+            $cfgResp = AgentService::for($selectedDomain->account->server)->get(
+                '/php/config?domain=' . urlencode($selectedDomain->domain) . '&version=' . urlencode($selectedDomain->php_version)
+            );
+            if ($cfgResp && $cfgResp->successful()) {
+                $directives = $cfgResp->json('values', []);
+            }
+        }
+
+        return view('php.ini-editor', compact('domains', 'selectedDomain', 'rawIni', 'directives'));
+    }
+
+    /**
+     * POST /php/ini-editor
+     * Save raw php.ini directives (Advanced Mode)
+     */
+    public function saveIni(Request $request)
+    {
+        $validated = $request->validate([
+            'domain_id' => 'required|exists:domains,id',
+            'content'   => 'required|string',
+        ]);
+
+        $domain = Domain::with('account.server')
+            ->whereIn('account_id', auth()->user()->currentAccountIds())
+            ->findOrFail($validated['domain_id']);
+
+        $response = AgentService::for($domain->account->server)->post('/php/ini', [
+            'domain'  => $domain->domain,
+            'version' => $domain->php_version,
+            'content' => $validated['content'],
+        ]);
+
+        if ($response && $response->successful()) {
+            ActivityLogger::log('php.ini_edited', 'domain', $domain->id, $domain->domain,
+                "Edited custom php.ini for {$domain->domain}");
+
+            return redirect()->route('user.php.ini-editor', ['domain_id' => $domain->id])
+                ->with('success', "php.ini updated and PHP {$domain->php_version}-FPM reloaded for {$domain->domain}.");
+        }
+
+        $error = $response ? $response->json('error', 'Agent unreachable') : 'Agent unreachable';
+        return back()->with('error', "Failed to update php.ini: {$error}");
+    }
 }

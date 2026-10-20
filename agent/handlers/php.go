@@ -440,3 +440,86 @@ func PhpConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 	system.RespondJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
 }
+
+type PhpRawIniReq struct {
+	Domain  string `json:"domain"`
+	Version string `json:"version"`
+	Content string `json:"content"`
+}
+
+// PhpRawIniHandler handles GET (read raw php.ini/override) and POST (save raw custom directives)
+func PhpRawIniHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		domain := r.URL.Query().Get("domain")
+		version := r.URL.Query().Get("version")
+		if version == "" {
+			version = "8.4"
+		}
+
+		var rawContent string
+		overrideFile := fmt.Sprintf("/etc/php/%s/fpm/conf.d/99-domain-%s.ini", version, domain)
+		if data, err := os.ReadFile(overrideFile); err == nil {
+			rawContent = string(data)
+		} else {
+			// Preload recommended directives template if no override exists
+			rawContent = fmt.Sprintf(`; Custom php.ini directives for %s (PHP %s)
+; Changes take effect immediately after saving.
+
+memory_limit = 256M
+upload_max_filesize = 64M
+post_max_size = 64M
+max_execution_time = 60
+max_input_time = 60
+max_input_vars = 3000
+display_errors = Off
+log_errors = On
+allow_url_fopen = On
+date.timezone = UTC
+opcache.enable = 1
+opcache.memory_consumption = 128
+`, domain, version)
+		}
+
+		system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+			"status":  "ok",
+			"domain":  domain,
+			"version": version,
+			"content": rawContent,
+		})
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		var req PhpRawIniReq
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Domain == "" {
+			system.RespondJSON(w, http.StatusBadRequest, map[string]string{"error": "domain is required"})
+			return
+		}
+
+		v := req.Version
+		if v == "" {
+			v = "8.4"
+		}
+
+		confDir := fmt.Sprintf("/etc/php/%s/fpm/conf.d", v)
+		os.MkdirAll(confDir, 0755)
+
+		overrideFile := fmt.Sprintf("%s/99-domain-%s.ini", confDir, req.Domain)
+		if err := os.WriteFile(overrideFile, []byte(req.Content), 0644); err != nil {
+			system.RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to write ini file: " + err.Error()})
+			return
+		}
+
+		// Reload PHP-FPM service
+		system.ExecCommand("systemctl", "reload", fmt.Sprintf("php%s-fpm", v))
+
+		system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+			"status":  "ok",
+			"message": fmt.Sprintf("Custom php.ini saved and PHP %s-FPM reloaded", v),
+		})
+		return
+	}
+
+	system.RespondJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
+}
+

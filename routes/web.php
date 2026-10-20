@@ -488,10 +488,12 @@ Route::middleware([
         Route::post('/ssh/delete-key', [SshController::class, 'deleteKey'])->name('ssh.delete-key');
         Route::post('/ssh/toggle-shell', [SshController::class, 'toggleShell'])->name('ssh.toggle-shell');
 
-        // PHP Version
+        // PHP Version & MultiPHP INI Editor
         Route::get('/php', [UserPhpController::class, 'index'])->name('php.index');
         Route::post('/php/switch', [UserPhpController::class, 'switchVersion'])->name('php.switch');
         Route::post('/php/config', [UserPhpController::class, 'saveConfig'])->name('php.config');
+        Route::get('/php/ini-editor', [UserPhpController::class, 'iniEditor'])->name('php.ini-editor');
+        Route::post('/php/ini-editor', [UserPhpController::class, 'saveIni'])->name('php.ini-editor.save');
 
         // Cron Jobs
         Route::get('/cron-jobs', [CronJobController::class, 'index'])->name('cronjobs.index');

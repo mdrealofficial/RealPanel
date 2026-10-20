@@ -147,6 +147,7 @@ func main() {
 	mux.HandleFunc("/php/install-extension", handlers.PhpInstallExtensionHandler)
 	mux.HandleFunc("/php/extensions", handlers.PhpExtensionToggleHandler)
 	mux.HandleFunc("/php/config", handlers.PhpConfigHandler)
+	mux.HandleFunc("/php/ini", handlers.PhpRawIniHandler)
 
 	// Node.js & PM2 Management
 	mux.HandleFunc("/node/version", handlers.NodeVersionHandler)
