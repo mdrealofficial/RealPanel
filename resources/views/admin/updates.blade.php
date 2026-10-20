@@ -3,19 +3,81 @@
         <h2 class="text-lg font-semibold text-gray-800">Updates</h2>
     </x-slot>
 
-    @if(session('success'))
-        <div class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-            {{ session('success') }}
-        </div>
-    @endif
+    <div x-data="updatesManager()" x-init="init()">
+        @if(session('success'))
+            <div class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                {{ session('success') }}
+            </div>
+        @endif
 
-    @if(session('error'))
-        <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-            {{ session('error') }}
-        </div>
-    @endif
+        @if(session('error'))
+            <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {{ session('error') }}
+            </div>
+        @endif
 
-    @php $mailVersion = $mailVersion ?? null; $mailInstalled = $mailInstalled ?? false; @endphp
+        @php $mailVersion = $mailVersion ?? null; $mailInstalled = $mailInstalled ?? false; @endphp
+
+    {{-- ── Background Update Progress Card (visible during and right after update) ── --}}
+    <div x-show="updating || updateFinished" x-cloak
+         class="bg-white rounded-xl shadow-sm border border-indigo-100 p-6 mb-6">
+        <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                     :class="{
+                         'bg-indigo-100 text-indigo-600': updateStatus === 'running',
+                         'bg-green-100 text-green-600': updateStatus === 'completed',
+                         'bg-red-100 text-red-600': updateStatus === 'failed'
+                     }">
+                    <template x-if="updateStatus === 'running'">
+                        <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    </template>
+                    <template x-if="updateStatus === 'completed'">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    </template>
+                    <template x-if="updateStatus === 'failed'">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </template>
+                </div>
+                <div>
+                    <h4 class="text-base font-bold text-gray-900" x-text="updateTitle()"></h4>
+                    <p class="text-xs text-gray-500 font-mono mt-0.5" x-text="updateStep || 'Processing background update...'"></p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-2xl font-black text-indigo-600" x-text="updateProgress + '%'"></div>
+                <div class="text-[11px] text-gray-400" x-text="updateStatus === 'completed' ? 'Finished' : (updateStatus === 'failed' ? 'Stopped' : 'Processing...')"></div>
+            </div>
+        </div>
+
+        {{-- Dynamic Progress Bar --}}
+        <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner mt-2">
+            <div class="h-3 rounded-full transition-all duration-500 ease-out"
+                 :class="{
+                     'bg-gradient-to-r from-indigo-500 to-indigo-600 animate-pulse': updateStatus === 'running',
+                     'bg-green-500': updateStatus === 'completed',
+                     'bg-red-500': updateStatus === 'failed'
+                 }"
+                 :style="'width: ' + updateProgress + '%'">
+            </div>
+        </div>
+
+        <template x-if="updateError">
+            <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                <strong>Error:</strong> <span x-text="updateError"></span>
+            </div>
+        </template>
+
+        <template x-if="updateStatus === 'completed'">
+            <div class="mt-4 flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-2.5">
+                <span class="text-xs font-medium text-green-800">Panel update completed successfully!</span>
+                <button type="button" @click="window.location.reload()"
+                        class="text-xs font-semibold px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-md shadow-sm transition">
+                    Reload Panel
+                </button>
+            </div>
+        </template>
+    </div>
 
     {{-- ── Panel update ─────────────────────────────────────────────────── --}}
     <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
@@ -46,35 +108,27 @@
 
                 <div class="flex items-center gap-3">
                     @if($updateAvailable)
-                        <form action="{{ route('admin.updates.run') }}" method="POST"
-                              x-data="{ updating: false }" @submit="updating = true">
-                            @csrf
-                            <button type="submit" :disabled="updating"
-                                class="inline-flex items-center px-5 py-2.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                                <template x-if="!updating">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                </template>
-                                <template x-if="updating">
-                                    <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                                </template>
-                                <span x-text="updating ? 'Updating...' : 'Update RealPanel'">Update RealPanel</span>
-                            </button>
-                        </form>
+                        <button type="button" @click="startBackgroundUpdate()" :disabled="updating"
+                            class="inline-flex items-center px-5 py-2.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+                            <template x-if="!updating">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            </template>
+                            <template x-if="updating">
+                                <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            </template>
+                            <span x-text="updating ? 'Updating in Background...' : 'Update RealPanel'">Update RealPanel</span>
+                        </button>
                     @else
-                        <form action="{{ route('admin.updates.run') }}" method="POST"
-                              x-data="{ updating: false }" @submit="updating = true">
-                            @csrf
-                            <button type="submit" :disabled="updating"
-                                class="inline-flex items-center px-4 py-2.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-300 rounded-lg hover:bg-amber-100 transition disabled:opacity-50">
-                                <template x-if="!updating">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                </template>
-                                <template x-if="updating">
-                                    <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                                </template>
-                                <span x-text="updating ? 'Updating...' : 'Force Update'">Force Update</span>
-                            </button>
-                        </form>
+                        <button type="button" @click="startBackgroundUpdate()" :disabled="updating"
+                            class="inline-flex items-center px-4 py-2.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-300 rounded-lg hover:bg-amber-100 transition disabled:opacity-50">
+                            <template x-if="!updating">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            </template>
+                            <template x-if="updating">
+                                <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            </template>
+                            <span x-text="updating ? 'Updating in Background...' : 'Force Update'">Force Update</span>
+                        </button>
                         <a href="{{ route('admin.updates.index') }}"
                            class="inline-flex items-center px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -159,15 +213,14 @@
     </div>
 
     {{-- ── Update log ───────────────────────────────────────────────────── --}}
-    <div class="bg-white rounded-xl shadow-sm overflow-hidden"
-         x-data="updateLog()" x-init="init()">
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
         <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
             <h3 class="text-base font-semibold text-gray-800">Update Log</h3>
             <div class="flex items-center gap-3">
                 <span class="text-xs text-gray-400" x-text="lastRefreshed ? 'Last refreshed ' + lastRefreshed : ''"></span>
-                <button @click="refresh()"
+                <button @click="refreshLog()"
                         class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
-                    <svg class="w-3.5 h-3.5 mr-1" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    <svg class="w-3.5 h-3.5 mr-1" :class="{ 'animate-spin': logLoading }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                     Refresh
                 </button>
             </div>
@@ -202,24 +255,136 @@
                 </button>
             </form>
         </div>
+        </div>
     </div>
 
     <script>
-    function updateLog() {
+    function updatesManager() {
         return {
+            updating: false,
+            updateFinished: false,
+            updateStatus: 'idle', // 'idle', 'running', 'completed', 'failed'
+            updateProgress: 0,
+            updateStep: '',
+            updateError: '',
+            pollInterval: null,
+
             log: @json($updateLog ?? ''),
-            loading: false,
+            logLoading: false,
             lastRefreshed: null,
 
             init() {
                 this.scrollToBottom();
-                // Auto-refresh every 10 seconds
-                setInterval(() => this.refresh(), 10000);
+                // Check if an update is already running on page load
+                this.checkStatus();
+                // Periodic log refresh
+                setInterval(() => this.refreshLog(), 10000);
             },
 
-            async refresh() {
-                if (this.loading) return;
-                this.loading = true;
+            updateTitle() {
+                if (this.updateStatus === 'running') return 'RealPanel Update in Progress';
+                if (this.updateStatus === 'completed') return 'Update Completed Successfully';
+                if (this.updateStatus === 'failed') return 'Update Encountered an Error';
+                return 'RealPanel Update';
+            },
+
+            async startBackgroundUpdate() {
+                if (this.updating) return;
+
+                if (!confirm('Start RealPanel background update now? This will pull latest updates, apply migrations, and refresh services.')) {
+                    return;
+                }
+
+                this.updating = true;
+                this.updateFinished = false;
+                this.updateStatus = 'running';
+                this.updateProgress = 10;
+                this.updateStep = 'Sending update command to server...';
+                this.updateError = '';
+
+                try {
+                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    const resp = await fetch('{{ route('admin.updates.run') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': token || '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({})
+                    });
+
+                    const data = await resp.json();
+                    if (data.status === 'started' || data.status === 'running') {
+                        this.updateProgress = data.progress || 15;
+                        this.updateStep = data.step || 'Update running in background...';
+                        this.startPolling();
+                    } else if (data.status === 'error') {
+                        this.updating = false;
+                        this.updateStatus = 'failed';
+                        this.updateError = data.error || 'Failed to start update';
+                    }
+                } catch (e) {
+                    // Even if network dropped briefly, start polling because agent might have started
+                    this.startPolling();
+                }
+            },
+
+            startPolling() {
+                if (this.pollInterval) clearInterval(this.pollInterval);
+                this.pollInterval = setInterval(() => this.checkStatus(), 1500);
+            },
+
+            async checkStatus() {
+                try {
+                    const resp = await fetch('{{ route('admin.updates.status') }}');
+                    if (!resp.ok) return;
+
+                    const data = await resp.json();
+                    const state = data.state || data.status;
+
+                    if (data.running || state === 'running') {
+                        this.updating = true;
+                        this.updateFinished = false;
+                        this.updateStatus = 'running';
+                        this.updateProgress = data.progress || Math.max(this.updateProgress, 15);
+                        this.updateStep = data.step || 'Processing...';
+                        this.refreshLog();
+                        if (!this.pollInterval) this.startPolling();
+                    } else if (state === 'completed') {
+                        if (this.updating) {
+                            this.updating = false;
+                            this.updateFinished = true;
+                            this.updateStatus = 'completed';
+                            this.updateProgress = 100;
+                            this.updateStep = data.step || 'Update finished successfully!';
+                            this.refreshLog();
+                            if (this.pollInterval) {
+                                clearInterval(this.pollInterval);
+                                this.pollInterval = null;
+                            }
+                        }
+                    } else if (state === 'failed') {
+                        if (this.updating) {
+                            this.updating = false;
+                            this.updateFinished = true;
+                            this.updateStatus = 'failed';
+                            this.updateError = data.error || 'Update process reported failure';
+                            this.updateStep = data.step || 'Failed';
+                            this.refreshLog();
+                            if (this.pollInterval) {
+                                clearInterval(this.pollInterval);
+                                this.pollInterval = null;
+                            }
+                        }
+                    }
+                } catch (e) {}
+            },
+
+            async refreshLog() {
+                if (this.logLoading) return;
+                this.logLoading = true;
                 try {
                     const res = await fetch('{{ route('admin.updates.log') }}');
                     if (res.ok) {
@@ -229,7 +394,7 @@
                         this.$nextTick(() => this.scrollToBottom());
                     }
                 } catch (e) {}
-                this.loading = false;
+                this.logLoading = false;
             },
 
             scrollToBottom() {

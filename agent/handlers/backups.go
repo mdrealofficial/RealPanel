@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"realpanel-agent-oss/system"
@@ -23,6 +24,97 @@ var safeNameRegex = regexp.MustCompile(`^[a-zA-Z0-9_\-\.]+$`)
 
 func isSafeName(s string) bool {
 	return s != "" && safeNameRegex.MatchString(s)
+}
+
+// BackupJobProgress represents live progress of a backup or restore task
+type BackupJobProgress struct {
+	ID         string  `json:"id"`
+	Username   string  `json:"username"`
+	Operation  string  `json:"operation"` // "create", "restore"
+	Status     string  `json:"status"`    // "pending", "running", "completed", "failed"
+	Progress   int     `json:"progress"`  // 0-100
+	Step       string  `json:"step"`
+	Filename   string  `json:"filename,omitempty"`
+	SizeMB     float64 `json:"size_mb,omitempty"`
+	Error      string  `json:"error,omitempty"`
+	StartedAt  int64   `json:"started_at"`
+	FinishedAt int64   `json:"finished_at,omitempty"`
+}
+
+var (
+	backupJobsMu sync.RWMutex
+	backupJobs   = make(map[string]*BackupJobProgress)
+)
+
+func setBackupJobProgress(id string, progress int, step string, status string, errMsg string, filename string, sizeMB float64) {
+	backupJobsMu.Lock()
+	defer backupJobsMu.Unlock()
+	job, exists := backupJobs[id]
+	if !exists {
+		return
+	}
+	job.Progress = progress
+	job.Step = step
+	job.Status = status
+	if errMsg != "" {
+		job.Error = errMsg
+	}
+	if filename != "" {
+		job.Filename = filename
+	}
+	if sizeMB > 0 {
+		job.SizeMB = sizeMB
+	}
+	if status == "completed" || status == "failed" {
+		job.FinishedAt = time.Now().Unix()
+	}
+}
+
+// BackupProgressHandler returns status and progress of a background backup/restore job
+func BackupProgressHandler(w http.ResponseWriter, r *http.Request) {
+	jobID := r.URL.Query().Get("id")
+	username := r.URL.Query().Get("username")
+
+	backupJobsMu.RLock()
+	defer backupJobsMu.RUnlock()
+
+	if jobID != "" {
+		if job, exists := backupJobs[jobID]; exists {
+			system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+				"status": "ok",
+				"job":    job,
+			})
+			return
+		}
+	}
+
+	// If queried by username, find the most recent job for that user
+	if username != "" {
+		var latest *BackupJobProgress
+		for _, j := range backupJobs {
+			if j.Username == username {
+				if latest == nil || j.StartedAt > latest.StartedAt {
+					latest = j
+				}
+			}
+		}
+		if latest != nil {
+			system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+				"status": "ok",
+				"job":    latest,
+			})
+			return
+		}
+	}
+
+	system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"status": "idle",
+		"job": map[string]interface{}{
+			"status":   "idle",
+			"progress": 0,
+			"step":     "No active backup job",
+		},
+	})
 }
 
 func getBackupDir() string {
@@ -53,16 +145,20 @@ func findBackupFile(filename string) (string, error) {
 }
 
 type BackupCreateReq struct {
+	JobID     string   `json:"job_id"`
 	Username  string   `json:"username"`
 	Type      string   `json:"type"` // "full", "files", "databases", "email"
 	Databases []string `json:"databases"`
 	Domains   []string `json:"domains"`
+	Async     bool     `json:"async"`
 }
 
 type BackupRestoreReq struct {
+	JobID    string `json:"job_id"`
 	Filename string `json:"filename"`
 	Username string `json:"username"`
 	Type     string `json:"type"` // "full", "files", "databases", "email"
+	Async    bool   `json:"async"`
 }
 
 type BackupDeleteReq struct {
@@ -116,120 +212,175 @@ func BackupCreateHandler(w http.ResponseWriter, r *http.Request) {
 		reqType = "full"
 	}
 
-	backupDir := getBackupDir()
-	os.MkdirAll(backupDir, 0750)
-
-	ts := time.Now().Format("20060102-150405")
-	filename := fmt.Sprintf("backup-%s-%s-%s.tar.gz", req.Username, ts, reqType)
-	destPath := filepath.Join(backupDir, filename)
-
-	// Create temporary staging directory
-	stagingDir, err := os.MkdirTemp("", fmt.Sprintf("rp-backup-%s-*", req.Username))
-	if err != nil {
-		system.RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to create temp staging dir: " + err.Error()})
-		return
-	}
-	defer os.RemoveAll(stagingDir)
-
-	// 1. Meta JSON
-	meta := map[string]interface{}{
-		"version":    "1.0",
-		"panel":      "RealPanel",
-		"username":   req.Username,
-		"type":       reqType,
-		"created_at": time.Now().Format("2006-01-02 15:04:05"),
-		"databases":  req.Databases,
-		"domains":    req.Domains,
-	}
-	if metaBytes, err := json.MarshalIndent(meta, "", "  "); err == nil {
-		os.WriteFile(filepath.Join(stagingDir, "backup_meta.json"), metaBytes, 0644)
+	jobID := req.JobID
+	if jobID == "" {
+		jobID = fmt.Sprintf("bk_%s_%d", req.Username, time.Now().UnixNano())
 	}
 
-	// 2. Files (Home directory)
-	if reqType == "full" || reqType == "files" {
-		homeDir := fmt.Sprintf("/home/%s", req.Username)
-		if _, err := os.Stat(homeDir); err == nil {
-			filesStaging := filepath.Join(stagingDir, "files")
-			os.MkdirAll(filesStaging, 0755)
-			cpCmd := fmt.Sprintf("cp -a %s/. %s/ 2>/dev/null || true", homeDir, filesStaging)
-			system.ExecCommand("bash", "-c", cpCmd)
+	job := &BackupJobProgress{
+		ID:        jobID,
+		Username:  req.Username,
+		Operation: "create",
+		Status:    "running",
+		Progress:  5,
+		Step:      "Initializing backup job...",
+		StartedAt: time.Now().Unix(),
+	}
+
+	backupJobsMu.Lock()
+	backupJobs[jobID] = job
+	backupJobsMu.Unlock()
+
+	runWorker := func() (string, float64, string, error) {
+		backupDir := getBackupDir()
+		os.MkdirAll(backupDir, 0750)
+
+		ts := time.Now().Format("20060102-150405")
+		filename := fmt.Sprintf("backup-%s-%s-%s.tar.gz", req.Username, ts, reqType)
+		destPath := filepath.Join(backupDir, filename)
+
+		// Create temporary staging directory
+		stagingDir, err := os.MkdirTemp("", fmt.Sprintf("rp-backup-%s-*", req.Username))
+		if err != nil {
+			setBackupJobProgress(jobID, 5, "Failed to create temp staging dir", "failed", err.Error(), "", 0)
+			return "", 0, "", fmt.Errorf("failed to create temp staging dir: %w", err)
 		}
-	}
+		defer os.RemoveAll(stagingDir)
 
-	// 3. Databases
-	if reqType == "full" || reqType == "databases" {
-		if len(req.Databases) > 0 {
-			dbStaging := filepath.Join(stagingDir, "databases")
-			os.MkdirAll(dbStaging, 0755)
-			for _, db := range req.Databases {
-				if !isSafeName(db) {
-					continue
-				}
-				sqlFile := filepath.Join(dbStaging, fmt.Sprintf("%s.sql", db))
-				dumpCmd := fmt.Sprintf("mysqldump --single-transaction --routines --triggers %s > %s 2>/dev/null", db, sqlFile)
-				system.ExecCommand("bash", "-c", dumpCmd)
+		// 1. Meta JSON
+		setBackupJobProgress(jobID, 15, "Generating backup metadata...", "running", "", "", 0)
+		meta := map[string]interface{}{
+			"version":    "1.0",
+			"panel":      "RealPanel",
+			"username":   req.Username,
+			"type":       reqType,
+			"created_at": time.Now().Format("2006-01-02 15:04:05"),
+			"databases":  req.Databases,
+			"domains":    req.Domains,
+		}
+		if metaBytes, err := json.MarshalIndent(meta, "", "  "); err == nil {
+			os.WriteFile(filepath.Join(stagingDir, "backup_meta.json"), metaBytes, 0644)
+		}
+
+		// 2. Files (Home directory)
+		if reqType == "full" || reqType == "files" {
+			setBackupJobProgress(jobID, 30, "Archiving user files & home directory...", "running", "", "", 0)
+			homeDir := fmt.Sprintf("/home/%s", req.Username)
+			if _, err := os.Stat(homeDir); err == nil {
+				filesStaging := filepath.Join(stagingDir, "files")
+				os.MkdirAll(filesStaging, 0755)
+				cpCmd := fmt.Sprintf("cp -a %s/. %s/ 2>/dev/null || true", homeDir, filesStaging)
+				system.ExecCommand("bash", "-c", cpCmd)
 			}
 		}
-	}
 
-	// 4. Email Mailboxes
-	if reqType == "full" || reqType == "email" {
-		if len(req.Domains) > 0 {
-			emailStaging := filepath.Join(stagingDir, "emails")
+		// 3. Databases
+		if reqType == "full" || reqType == "databases" {
+			setBackupJobProgress(jobID, 55, "Exporting databases (mysqldump)...", "running", "", "", 0)
+			if len(req.Databases) > 0 {
+				dbStaging := filepath.Join(stagingDir, "databases")
+				os.MkdirAll(dbStaging, 0755)
+				for _, db := range req.Databases {
+					if !isSafeName(db) {
+						continue
+					}
+					sqlFile := filepath.Join(dbStaging, fmt.Sprintf("%s.sql", db))
+					dumpCmd := fmt.Sprintf("mysqldump --single-transaction --routines --triggers %s > %s 2>/dev/null", db, sqlFile)
+					system.ExecCommand("bash", "-c", dumpCmd)
+				}
+			}
+		}
+
+		// 4. Email Mailboxes
+		if reqType == "full" || reqType == "email" {
+			setBackupJobProgress(jobID, 70, "Archiving email accounts & mailboxes...", "running", "", "", 0)
+			if len(req.Domains) > 0 {
+				emailStaging := filepath.Join(stagingDir, "emails")
+				for _, domain := range req.Domains {
+					if !isSafeName(domain) {
+						continue
+					}
+					mailDir := fmt.Sprintf("/var/mail/vhosts/%s", domain)
+					if _, err := os.Stat(mailDir); err == nil {
+						domainDest := filepath.Join(emailStaging, domain)
+						os.MkdirAll(domainDest, 0755)
+						cpCmd := fmt.Sprintf("cp -a %s/. %s/ 2>/dev/null || true", mailDir, domainDest)
+						system.ExecCommand("bash", "-c", cpCmd)
+					}
+				}
+			}
+		}
+
+		// 5. Nginx Vhosts
+		if reqType == "full" {
+			setBackupJobProgress(jobID, 80, "Archiving web server virtual host configs...", "running", "", "", 0)
+			nginxStaging := filepath.Join(stagingDir, "nginx")
 			for _, domain := range req.Domains {
 				if !isSafeName(domain) {
 					continue
 				}
-				mailDir := fmt.Sprintf("/var/mail/vhosts/%s", domain)
-				if _, err := os.Stat(mailDir); err == nil {
-					domainDest := filepath.Join(emailStaging, domain)
-					os.MkdirAll(domainDest, 0755)
-					cpCmd := fmt.Sprintf("cp -a %s/. %s/ 2>/dev/null || true", mailDir, domainDest)
-					system.ExecCommand("bash", "-c", cpCmd)
+				vhostDebian := fmt.Sprintf("/etc/nginx/sites-available/%s.conf", domain)
+				vhostRhel := fmt.Sprintf("/etc/nginx/conf.d/%s.conf", domain)
+				if _, err := os.Stat(vhostDebian); err == nil {
+					os.MkdirAll(nginxStaging, 0755)
+					system.ExecCommand("cp", "-a", vhostDebian, nginxStaging+"/")
+				} else if _, err := os.Stat(vhostRhel); err == nil {
+					os.MkdirAll(nginxStaging, 0755)
+					system.ExecCommand("cp", "-a", vhostRhel, nginxStaging+"/")
 				}
 			}
 		}
-	}
 
-	// 5. Nginx Vhosts
-	if reqType == "full" {
-		nginxStaging := filepath.Join(stagingDir, "nginx")
-		for _, domain := range req.Domains {
-			if !isSafeName(domain) {
-				continue
-			}
-			vhostDebian := fmt.Sprintf("/etc/nginx/sites-available/%s.conf", domain)
-			vhostRhel := fmt.Sprintf("/etc/nginx/conf.d/%s.conf", domain)
-			if _, err := os.Stat(vhostDebian); err == nil {
-				os.MkdirAll(nginxStaging, 0755)
-				system.ExecCommand("cp", "-a", vhostDebian, nginxStaging+"/")
-			} else if _, err := os.Stat(vhostRhel); err == nil {
-				os.MkdirAll(nginxStaging, 0755)
-				system.ExecCommand("cp", "-a", vhostRhel, nginxStaging+"/")
-			}
+		// Create compressed tar archive
+		setBackupJobProgress(jobID, 90, "Compressing archive (tar.gz)...", "running", "", "", 0)
+		tarCmd := fmt.Sprintf("tar -czf %s -C %s .", destPath, stagingDir)
+		if out, err := system.ExecCommand("bash", "-c", tarCmd); err != nil {
+			errStr := fmt.Sprintf("Failed to create tar archive: %v (%s)", err, out)
+			setBackupJobProgress(jobID, 90, "Compression failed", "failed", errStr, "", 0)
+			return "", 0, "", fmt.Errorf(errStr)
 		}
+
+		fi, err := os.Stat(destPath)
+		var sizeMb float64
+		if err == nil {
+			sizeMb = float64(fi.Size()) / (1024.0 * 1024.0)
+		}
+		duration := time.Since(start).Round(time.Millisecond).String()
+
+		setBackupJobProgress(jobID, 100, "Backup completed successfully!", "completed", "", filename, math.Round(sizeMb*100)/100)
+		return filename, math.Round(sizeMb*100) / 100, duration, nil
 	}
 
-	// Create compressed tar archive
-	tarCmd := fmt.Sprintf("tar -czf %s -C %s .", destPath, stagingDir)
-	if out, err := system.ExecCommand("bash", "-c", tarCmd); err != nil {
-		system.RespondJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": fmt.Sprintf("Failed to create tar archive: %v (%s)", err, out),
+	if req.Async {
+		go func() {
+			runWorker()
+		}()
+
+		system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+			"status":   "started",
+			"job_id":   jobID,
+			"username": req.Username,
+			"message":  "Backup process started in background",
+			"progress": 5,
+			"step":     "Initializing backup job...",
 		})
 		return
 	}
 
-	fi, err := os.Stat(destPath)
-	var sizeMb float64
-	if err == nil {
-		sizeMb = float64(fi.Size()) / (1024.0 * 1024.0)
+	// Synchronous execution fallback
+	filename, sizeMb, duration, err := runWorker()
+	if err != nil {
+		system.RespondJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+		return
 	}
-	duration := time.Since(start).Round(time.Millisecond).String()
 
 	system.RespondJSON(w, http.StatusOK, map[string]interface{}{
 		"status":   "ok",
+		"job_id":   jobID,
 		"filename": filename,
-		"size_mb":  math.Round(sizeMb*100) / 100,
+		"size_mb":  sizeMb,
 		"duration": duration,
 	})
 }

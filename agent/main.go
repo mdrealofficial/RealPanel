@@ -36,6 +36,7 @@ func main() {
 	mux.HandleFunc("/health", handlers.HealthHandler)
 	mux.HandleFunc("/version", handlers.VersionHandler)
 	mux.HandleFunc("/update/log", handlers.UpdateLogHandler)
+	mux.HandleFunc("/update/status", handlers.UpdateStatusHandler)
 	mux.HandleFunc("/update/run", handlers.UpdateRunHandler)
 	mux.HandleFunc("/metrics/realtime", handlers.RealtimeMetricsHandler)
 	mux.HandleFunc("/stats/server", handlers.ServerStatsHandler)
@@ -170,6 +171,7 @@ func main() {
 
 	// 12. Backups
 	mux.HandleFunc("/backup/create", handlers.BackupCreateHandler)
+	mux.HandleFunc("/backup/progress", handlers.BackupProgressHandler)
 	mux.HandleFunc("/backup/list", handlers.BackupListHandler)
 	mux.HandleFunc("/backup/restore", handlers.BackupRestoreHandler)
 	mux.HandleFunc("/backup/delete", handlers.BackupDeleteHandler)

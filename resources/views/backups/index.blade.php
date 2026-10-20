@@ -28,42 +28,110 @@
     </div>
 
     @if($selectedServer)
-        <!-- Create Backup -->
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-            <div class="px-6 py-5 border-b border-gray-100">
-                <h3 class="text-base font-semibold text-gray-800">{{ __('backups.create_backup') }}</h3>
+        <!-- Create Backup with Background Progress -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6"
+             x-data="backupManager({{ $selectedServer->id }})" x-init="init()">
+            <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-800">{{ __('backups.create_backup') }}</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Backups run automatically in the background without blocking the interface.</p>
+                </div>
+                <template x-if="jobRunning">
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 animate-pulse">
+                        <svg class="w-3.5 h-3.5 mr-1.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        Backup In Progress
+                    </span>
+                </template>
             </div>
-            <form action="{{ route('admin.backups.create') }}" method="POST" class="px-6 py-5"
-                  x-data="{ creating: false }" @submit="creating = true">
-                @csrf
-                <input type="hidden" name="server_id" value="{{ $selectedServer->id }}">
+
+            {{-- Live Progress Card (Visible during or immediately after backup creation) --}}
+            <div x-show="jobRunning || jobFinished" x-cloak class="px-6 pt-5 pb-2">
+                <div class="bg-indigo-50/50 border border-indigo-100 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                 :class="{
+                                     'bg-indigo-100 text-indigo-600': jobStatus === 'running',
+                                     'bg-green-100 text-green-600': jobStatus === 'completed',
+                                     'bg-red-100 text-red-600': jobStatus === 'failed'
+                                 }">
+                                <template x-if="jobStatus === 'running'">
+                                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                </template>
+                                <template x-if="jobStatus === 'completed'">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                                <template x-if="jobStatus === 'failed'">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </template>
+                            </div>
+                            <div>
+                                <div class="text-sm font-bold text-gray-900" x-text="jobStep || 'Processing background backup...'"></div>
+                                <div class="text-xs text-gray-500 font-mono" x-text="activeAccount ? 'Account: ' + activeAccount : ''"></div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xl font-black text-indigo-600" x-text="jobProgress + '%'"></span>
+                        </div>
+                    </div>
+
+                    {{-- Progress Bar --}}
+                    <div class="w-full bg-indigo-100/70 rounded-full h-2 overflow-hidden shadow-inner mt-2">
+                        <div class="h-2 rounded-full transition-all duration-500 ease-out"
+                             :class="{
+                                 'bg-indigo-600': jobStatus === 'running',
+                                 'bg-green-600': jobStatus === 'completed',
+                                 'bg-red-600': jobStatus === 'failed'
+                             }"
+                             :style="'width: ' + jobProgress + '%'">
+                        </div>
+                    </div>
+
+                    <template x-if="jobError">
+                        <div class="mt-3 p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                            <strong>Error:</strong> <span x-text="jobError"></span>
+                        </div>
+                    </template>
+
+                    <template x-if="jobStatus === 'completed'">
+                        <div class="mt-3 flex items-center justify-between text-xs text-green-700 font-medium">
+                            <span>Backup archive generated successfully!</span>
+                            <button type="button" @click="window.location.reload()" class="underline font-bold hover:text-green-800">
+                                Refresh list
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <form @submit.prevent="startBackup()" class="px-6 py-5">
                 <div class="flex flex-wrap items-end gap-4">
                     <div class="flex-1 min-w-48">
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ __('backups.account_label') }}</label>
-                        <select name="account_id" class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select x-model="selectedAccount" class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                             @foreach($accounts as $account)
-                                <option value="{{ $account->id }}">{{ $account->username }}</option>
+                                <option value="{{ $account->id }}" data-username="{{ $account->username }}">{{ $account->username }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="w-40">
                         <label class="block text-sm font-medium text-gray-700 mb-1.5">{{ __('backups.backup_type') }}</label>
-                        <select name="type" class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <select x-model="selectedType" class="w-full rounded-lg border-gray-300 shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="full">{{ __('backups.full_backup') }}</option>
                             <option value="files">{{ __('backups.files_only') }}</option>
                             <option value="databases">{{ __('backups.databases_only') }}</option>
                             <option value="email">{{ __('backups.email_only') }}</option>
                         </select>
                     </div>
-                    <button type="submit" :disabled="creating"
-                        class="inline-flex items-center px-5 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        <template x-if="!creating">
+                    <button type="submit" :disabled="jobRunning"
+                        class="inline-flex items-center px-5 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
+                        <template x-if="!jobRunning">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
                         </template>
-                        <template x-if="creating">
+                        <template x-if="jobRunning">
                             <svg class="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                         </template>
-                        <span x-text="creating ? '{{ __('backups.creating_backup') }}' : '{{ __('backups.create_backup') }}'">{{ __('backups.create_backup') }}</span>
+                        <span x-text="jobRunning ? 'Backing Up in Background...' : '{{ __('backups.create_backup') }}'">{{ __('backups.create_backup') }}</span>
                     </button>
                 </div>
             </form>
@@ -349,4 +417,126 @@
             </div>
         </div>
     @endif
+
+    <script>
+    function backupManager(serverId) {
+        return {
+            serverId: serverId,
+            selectedAccount: '{{ $accounts->first()?->id ?? "" }}',
+            selectedType: 'full',
+            activeAccount: '',
+            jobId: '',
+            jobRunning: false,
+            jobFinished: false,
+            jobStatus: 'idle',
+            jobProgress: 0,
+            jobStep: '',
+            jobError: '',
+            pollInterval: null,
+
+            init() {
+                // If there are accounts, initialize active account username
+                const accSelect = document.querySelector('select[x-model="selectedAccount"]');
+                if (accSelect && accSelect.selectedOptions[0]) {
+                    this.activeAccount = accSelect.selectedOptions[0].getAttribute('data-username') || '';
+                }
+            },
+
+            async startBackup() {
+                if (this.jobRunning) return;
+
+                const selectElem = document.querySelector('select[x-model="selectedAccount"]');
+                const opt = selectElem ? selectElem.selectedOptions[0] : null;
+                const username = opt ? (opt.getAttribute('data-username') || opt.text) : '';
+                this.activeAccount = username;
+
+                this.jobRunning = true;
+                this.jobFinished = false;
+                this.jobStatus = 'running';
+                this.jobProgress = 5;
+                this.jobStep = 'Dispatched backup job in background...';
+                this.jobError = '';
+
+                try {
+                    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    const resp = await fetch('{{ route('admin.backups.create') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': token || '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            server_id: this.serverId,
+                            account_id: this.selectedAccount,
+                            type: this.selectedType
+                        })
+                    });
+
+                    const data = await resp.json();
+                    if (data.status === 'started' || data.status === 'ok') {
+                        this.jobId = data.job_id || '';
+                        this.jobProgress = data.progress || 10;
+                        this.jobStep = data.step || 'Running backup job...';
+                        this.startPolling();
+                    } else {
+                        this.jobRunning = false;
+                        this.jobStatus = 'failed';
+                        this.jobError = data.error || 'Failed to dispatch backup job';
+                    }
+                } catch (e) {
+                    this.startPolling();
+                }
+            },
+
+            startPolling() {
+                if (this.pollInterval) clearInterval(this.pollInterval);
+                this.pollInterval = setInterval(() => this.pollProgress(), 1500);
+            },
+
+            async pollProgress() {
+                try {
+                    let url = `{{ route('admin.backups.progress') }}?server_id=${this.serverId}`;
+                    if (this.jobId) url += `&job_id=${encodeURIComponent(this.jobId)}`;
+                    if (this.activeAccount) url += `&username=${encodeURIComponent(this.activeAccount)}`;
+
+                    const resp = await fetch(url);
+                    if (!resp.ok) return;
+
+                    const data = await resp.json();
+                    const job = data.job;
+                    if (!job) return;
+
+                    if (job.status === 'running') {
+                        this.jobRunning = true;
+                        this.jobStatus = 'running';
+                        this.jobProgress = job.progress || 15;
+                        this.jobStep = job.step || 'Working...';
+                    } else if (job.status === 'completed') {
+                        this.jobRunning = false;
+                        this.jobFinished = true;
+                        this.jobStatus = 'completed';
+                        this.jobProgress = 100;
+                        this.jobStep = job.step || 'Backup completed successfully!';
+                        if (this.pollInterval) {
+                            clearInterval(this.pollInterval);
+                            this.pollInterval = null;
+                        }
+                    } else if (job.status === 'failed') {
+                        this.jobRunning = false;
+                        this.jobFinished = true;
+                        this.jobStatus = 'failed';
+                        this.jobError = job.error || 'Backup job reported failure';
+                        this.jobStep = job.step || 'Failed';
+                        if (this.pollInterval) {
+                            clearInterval(this.pollInterval);
+                            this.pollInterval = null;
+                        }
+                    }
+                } catch (e) {}
+            }
+        };
+    }
+    </script>
 </x-admin-layout>

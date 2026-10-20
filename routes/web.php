@@ -152,6 +152,7 @@ Route::middleware([
         // Backups
         Route::get('/backups', [BackupController::class, 'index'])->name('backups.index');
         Route::post('/backups/create', [BackupController::class, 'create'])->name('backups.create');
+        Route::get('/backups/progress', [BackupController::class, 'progress'])->name('backups.progress');
         Route::post('/backups/{backup}/restore', [BackupController::class, 'restore'])->name('backups.restore');
         Route::get('/backups/{backup}/browse', [BackupController::class, 'browse'])->name('backups.browse');
         Route::post('/backups/{backup}/restore-files', [BackupController::class, 'restoreFiles'])->name('backups.restore-files');
@@ -187,6 +188,7 @@ Route::middleware([
         // Updates
         Route::get('/updates', [UpdateController::class, 'index'])->name('updates.index');
         Route::post('/updates/run', [UpdateController::class, 'run'])->name('updates.run');
+        Route::get('/updates/status', [UpdateController::class, 'status'])->name('updates.status');
         Route::post('/updates/agent', [UpdateController::class, 'forceAgentUpdate'])->name('updates.agent');
         Route::post('/updates/mail', [UpdateController::class, 'forceMailUpdate'])->name('updates.mail');
         Route::get('/updates/log', [UpdateController::class, 'log'])->name('updates.log');

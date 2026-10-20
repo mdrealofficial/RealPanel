@@ -81,23 +81,61 @@ class UpdateController extends Controller
      */
     public function run(Request $request)
     {
-        @set_time_limit(600);
-        @ini_set('max_execution_time', '600');
-
         $server = Server::first();
         if (!$server) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['status' => 'error', 'error' => __('servers.no_server_configured')], 404);
+            }
             return back()->with('error', __('servers.no_server_configured'));
         }
 
-        $response = AgentService::for($server)->postLong('/update/run', [], 600);
+        $response = AgentService::for($server)->post('/update/run', []);
 
         if ($response && $response->successful()) {
-            return redirect()->route('admin.updates.index')->with('success', __('servers.update_completed'));
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'status'   => 'started',
+                    'message'  => __('servers.update_started') ?: 'Update started in background',
+                    'progress' => $response->json('progress', 5),
+                    'step'     => $response->json('step', 'Initializing update...'),
+                ]);
+            }
+            return redirect()->route('admin.updates.index')->with('success', 'Update started in the background.');
         }
 
         $error  = $response ? $response->json('error', 'Unknown error') : 'Could not connect to agent';
         $output = $response ? $response->json('output', '') : '';
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['status' => 'error', 'error' => $error, 'output' => $output], 500);
+        }
+
         return back()->with('error', __('servers.update_failed', ['error' => $error]))->with('output', $output);
+    }
+
+    /**
+     * GET /admin/updates/status — returns live background update status & progress.
+     */
+    public function status()
+    {
+        $server = Server::first();
+        if (!$server) {
+            return response()->json(['status' => 'error', 'error' => 'No server configured'], 404);
+        }
+
+        try {
+            $response = AgentService::for($server)->get('/update/status');
+            if ($response && $response->successful()) {
+                return response()->json($response->json());
+            }
+        } catch (\Exception $e) {}
+
+        return response()->json([
+            'status'   => 'idle',
+            'running'  => false,
+            'progress' => 0,
+            'step'     => 'Idle',
+        ]);
     }
 
     /**

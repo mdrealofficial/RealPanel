@@ -6,10 +6,65 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"realpanel-agent-oss/system"
 )
+
+// UpdateProgressState tracks the active or most recent update progress
+type UpdateProgressState struct {
+	Running    bool   `json:"running"`
+	Status     string `json:"status"` // "idle", "running", "completed", "failed"
+	Progress   int    `json:"progress"` // 0 to 100
+	Step       string `json:"step"`
+	Error      string `json:"error,omitempty"`
+	StartedAt  int64  `json:"started_at,omitempty"`
+	FinishedAt int64  `json:"finished_at,omitempty"`
+}
+
+var (
+	updateMu    sync.RWMutex
+	updateState = UpdateProgressState{
+		Status:   "idle",
+		Progress: 0,
+		Step:     "Ready",
+	}
+)
+
+func setUpdateProgress(running bool, status string, progress int, step string, errMsg string) {
+	updateMu.Lock()
+	defer updateMu.Unlock()
+	updateState.Running = running
+	updateState.Status = status
+	updateState.Progress = progress
+	updateState.Step = step
+	updateState.Error = errMsg
+	if running && updateState.StartedAt == 0 {
+		updateState.StartedAt = time.Now().Unix()
+	}
+	if !running && status != "idle" {
+		updateState.FinishedAt = time.Now().Unix()
+	}
+}
+
+// UpdateStatusHandler returns the current update progress state
+func UpdateStatusHandler(w http.ResponseWriter, r *http.Request) {
+	updateMu.RLock()
+	state := updateState
+	updateMu.RUnlock()
+
+	system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"status":      "ok",
+		"running":     state.Running,
+		"state":       state.Status,
+		"progress":    state.Progress,
+		"step":        state.Step,
+		"error":       state.Error,
+		"started_at":  state.StartedAt,
+		"finished_at": state.FinishedAt,
+	})
+}
 
 // VersionHandler returns version information for RealPanel agent and services
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,46 +107,65 @@ func UpdateLogHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// UpdateRunHandler executes the panel update script and agent recompile synchronously
+// UpdateRunHandler executes the panel update script and agent recompile asynchronously in the background
 func UpdateRunHandler(w http.ResponseWriter, r *http.Request) {
+	updateMu.RLock()
+	alreadyRunning := updateState.Running
+	updateMu.RUnlock()
+
+	if alreadyRunning {
+		system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+			"status":   "running",
+			"message":  "An update is already running in the background",
+			"progress": updateState.Progress,
+			"step":     updateState.Step,
+		})
+		return
+	}
+
 	panelDir := "/opt/realpanel"
 	if _, err := os.Stat(panelDir); os.IsNotExist(err) {
 		panelDir = "/opt/opterius"
 	}
 	logPath := "/var/log/realpanel-update.log"
 
-	os.MkdirAll(filepath.Dir(logPath), 0755)
-	f, _ := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if f != nil {
-		defer f.Close()
-	}
+	// Immediately set state to running and return success response so frontend never times out
+	setUpdateProgress(true, "running", 5, "Initializing update...", "")
 
-	writeLog := func(msg string) {
+	go func() {
+		os.MkdirAll(filepath.Dir(logPath), 0755)
+		f, _ := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if f != nil {
-			fmt.Fprint(f, msg)
+			defer f.Close()
 		}
-	}
 
-	writeLog("\n=== Starting RealPanel Update ===\n")
+		writeLog := func(msg string) {
+			if f != nil {
+				fmt.Fprint(f, msg)
+			}
+		}
 
-	// 1. Ensure git safe.directory is configured to avoid dubious ownership errors
-	system.ExecCommand("git", "config", "--global", "--add", "safe.directory", panelDir)
+		writeLog("\n=== Starting RealPanel Background Update ===\n")
+		writeLog(fmt.Sprintf("Time: %s\n", time.Now().Format("2006-01-02 15:04:05")))
 
-	// 2. Perform git pull
-	pullCmd := fmt.Sprintf("cd %s && git config --global --add safe.directory %s && git pull origin main 2>&1", panelDir, panelDir)
-	pullOut, pullErr := system.ExecCommand("bash", "-c", pullCmd)
-	if pullErr != nil {
-		errStr := fmt.Sprintf("Git pull failed: %v\nOutput: %s\n", pullErr, pullOut)
-		writeLog("Update Error: " + errStr)
-		system.RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
-			"error":  "Git pull failed",
-			"output": pullOut,
-		})
-		return
-	}
-	writeLog("Git pull output:\n" + pullOut + "\n")
+		// 1. Ensure git safe.directory is configured to avoid dubious ownership errors
+		setUpdateProgress(true, "running", 15, "Configuring git safe directory...", "")
+		system.ExecCommand("git", "config", "--global", "--add", "safe.directory", panelDir)
 
-	// 3. Run Laravel migrations and cache clearing
+		// 2. Perform git pull
+		setUpdateProgress(true, "running", 25, "Pulling latest code from GitHub...", "")
+		pullCmd := fmt.Sprintf("cd %s && git config --global --add safe.directory %s && git pull origin main 2>&1", panelDir, panelDir)
+		pullOut, pullErr := system.ExecCommand("bash", "-c", pullCmd)
+		if pullErr != nil {
+			errStr := fmt.Sprintf("Git pull failed: %v\nOutput: %s\n", pullErr, pullOut)
+			writeLog("Update Error: " + errStr)
+			setUpdateProgress(false, "failed", 25, "Git pull failed", errStr)
+			return
+		}
+		writeLog("Git pull output:\n" + pullOut + "\n")
+
+		// 3. Run Laravel migrations and cache clearing
+		setUpdateProgress(true, "running", 50, "Running database migrations & clearing caches...", "")
 	artisanCmd := fmt.Sprintf("cd %s && php artisan migrate --force && php artisan view:clear && php artisan route:clear && php artisan config:clear && php artisan cache:clear 2>&1", panelDir)
 	artOut, artErr := system.ExecCommand("bash", "-c", artisanCmd)
 	if artErr != nil {
@@ -487,14 +561,14 @@ EONGINX_DEFAULT
     nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null || true
 fi
 `
-	sysFixOut, _ := system.ExecCommand("bash", "-c", sysFixCmd)
-	if sysFixOut != "" {
-		writeLog("System Maintenance Output:\n" + sysFixOut + "\n")
-	}
+		setUpdateProgress(true, "running", 75, "Applying system services & configuration maintenance...", "")
+		sysFixOut, _ := system.ExecCommand("bash", "-c", sysFixCmd)
+		if sysFixOut != "" {
+			writeLog("System Maintenance Output:\n" + sysFixOut + "\n")
+		}
 
-	// 5. Rebuild and restart the Go agent in the background so this request finishes cleanly
-	go func() {
-		time.Sleep(1 * time.Second)
+		// 4. Rebuild and restart the Go agent in the background
+		setUpdateProgress(true, "running", 90, "Rebuilding and restarting RealPanel agent...", "")
 		agentBuildCmd := fmt.Sprintf(`cd %s/agent && go build -o /usr/local/bin/realpanel-agent . && chmod +x /usr/local/bin/realpanel-agent && ln -sf /usr/local/bin/realpanel-agent /usr/local/bin/opterius-agent
 if [ -f /etc/systemd/system/opterius-agent.service ] && [ ! -f /etc/systemd/system/realpanel-agent.service ]; then
     cp /etc/systemd/system/opterius-agent.service /etc/systemd/system/realpanel-agent.service
@@ -506,13 +580,15 @@ fi
 systemctl restart realpanel-agent 2>/dev/null || systemctl restart opterius-agent 2>/dev/null || true
 `, panelDir)
 		system.ExecCommand("bash", "-c", agentBuildCmd)
+
+		writeLog("=== RealPanel Update Finished Successfully ===\n")
+		setUpdateProgress(false, "completed", 100, "Update completed successfully!", "")
 	}()
 
-	writeLog("=== RealPanel Update Finished Successfully ===\n")
-
 	system.RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"status":  "ok",
-		"message": "Update completed successfully",
-		"output":  pullOut + "\n" + artOut,
+		"status":   "started",
+		"message":  "Update started in background",
+		"progress": 5,
+		"step":     "Initializing update...",
 	})
 }

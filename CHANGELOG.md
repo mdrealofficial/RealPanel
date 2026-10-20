@@ -10,6 +10,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.57] - 2026-10-20
+
+### Added — Background Asynchronous Processing with Live Frontend Progress
+- **Asynchronous Panel Updates**:
+  - Updates now execute asynchronously in a background goroutine on the agent (`/update/run`), immediately returning an acknowledgement so the browser never blocks or encounters 504 Gateway Timeouts.
+  - New agent endpoint `GET /update/status` reports real-time status (`running`, `completed`, `failed`), progress percentage (0-100%), current step description, and error details.
+  - Interactive UI in `resources/views/admin/updates.blade.php`: Live animated progress bar, status badges, active step tracker, and auto-scrolling log console with 1.5s background polling.
+- **Asynchronous Backups with Live Progress**:
+  - Backup creation (`/backup/create`) now supports background asynchronous execution with unique `job_id` tracking.
+  - New agent endpoint `GET /backup/progress` and Laravel endpoint `GET /admin/backups/progress` for live status polling.
+  - Backups dashboard (`resources/views/backups/index.blade.php`) now displays a live progress bar, step updates (metadata generation, archiving home directory, exporting MySQL databases, archiving email mailboxes, compression), and automatic listing reload upon completion.
+
 ## [2.9.56] - 2026-10-20
 
 ### Fixed — Prevent 504 Gateway Timeouts During Updates

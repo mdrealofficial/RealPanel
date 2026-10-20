@@ -69,43 +69,92 @@ class BackupController extends Controller
         $server = Server::findOrFail($validated['server_id']);
         $account = Account::with('domains', 'databases')->findOrFail($validated['account_id']);
 
-        $response = AgentService::for($server)->postLong('/backup/create', [
+        $jobId = 'bk_' . $account->username . '_' . time();
+
+        $response = AgentService::for($server)->post('/backup/create', [
+            'job_id'    => $jobId,
             'username'  => $account->username,
             'type'      => $validated['type'],
             'databases' => $account->databases->pluck('name')->toArray(),
             'domains'   => $account->domains->pluck('domain')->toArray(),
-        ], 600);
+            'async'     => true,
+        ]);
 
         if ($response && $response->successful()) {
-            $data = (array) $response->json();
+            ActivityLogger::log('backup.started', 'account', $account->id, $account->username,
+                "Started {$validated['type']} backup for {$account->username} in background");
 
-            $sizeMb   = round((float) ($data['size_mb'] ?? $data['size'] ?? 0), 2);
-            $duration = (string) ($data['duration'] ?? '1s');
-            $filename = (string) ($data['filename'] ?? '');
-
-            Backup::create([
-                'server_id'  => $server->id,
-                'account_id' => $account->id,
-                'username'   => $account->username,
-                'filename'   => $filename,
-                'type'       => $validated['type'],
-                'size_mb'    => $sizeMb,
-                'status'     => 'completed',
-            ]);
-
-            ActivityLogger::log('backup.created', 'account', $account->id, $account->username,
-                "Created {$validated['type']} backup for {$account->username} ({$sizeMb} MB)");
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'status'   => 'started',
+                    'job_id'   => $jobId,
+                    'username' => $account->username,
+                    'message'  => 'Backup process started in the background.',
+                    'progress' => 5,
+                    'step'     => 'Initializing backup...',
+                ]);
+            }
 
             return redirect()->route('admin.backups.index', ['server_id' => $server->id])
-                ->with('success', __('backups.backup_created', [
-                    'username' => $account->username,
-                    'size'     => $sizeMb,
-                    'duration' => $duration,
-                ]));
+                ->with('success', 'Backup process started in the background.');
         }
 
         $error = $response ? ($response->json('error') ?? $response->json('message') ?? 'Unknown error') : 'Agent unreachable';
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['status' => 'error', 'error' => $error], 500);
+        }
         return back()->with('error', __('backups.backup_failed', ['error' => $error]));
+    }
+
+    /**
+     * GET /admin/backups/progress — poll progress of a background backup job
+     */
+    public function progress(Request $request)
+    {
+        $serverId = $request->query('server_id');
+        $server = $serverId ? Server::find($serverId) : Server::first();
+        if (!$server) {
+            return response()->json(['status' => 'error', 'error' => 'Server not found'], 404);
+        }
+
+        $jobId = $request->query('job_id', '');
+        $username = $request->query('username', '');
+
+        try {
+            $url = '/backup/progress?id=' . urlencode($jobId) . '&username=' . urlencode($username);
+            $response = AgentService::for($server)->get($url);
+            if ($response && $response->successful()) {
+                $data = $response->json();
+                $job = $data['job'] ?? null;
+
+                // If completed and not yet in database, register it
+                if ($job && ($job['status'] ?? '') === 'completed' && !empty($job['filename'])) {
+                    if (!Backup::where('filename', $job['filename'])->exists()) {
+                        $acc = Account::where('username', $job['username'])->first();
+                        Backup::create([
+                            'server_id'  => $server->id,
+                            'account_id' => $acc?->id,
+                            'username'   => $job['username'] ?? '',
+                            'filename'   => $job['filename'],
+                            'type'       => 'full',
+                            'size_mb'    => round((float) ($job['size_mb'] ?? 0), 2),
+                            'status'     => 'completed',
+                        ]);
+                    }
+                }
+
+                return response()->json($data);
+            }
+        } catch (\Exception $e) {}
+
+        return response()->json([
+            'status' => 'idle',
+            'job' => [
+                'status'   => 'idle',
+                'progress' => 0,
+                'step'     => 'No active backup job',
+            ],
+        ]);
     }
 
     public function restore(Request $request, Backup $backup)
