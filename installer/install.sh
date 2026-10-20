@@ -643,6 +643,44 @@ nginx -t && systemctl reload nginx
 ok "phpMyAdmin installed (port 8081)"
 
 # ============================================================
+# Step 5f: Install MongoDB
+# ============================================================
+info "Installing MongoDB..."
+if [[ "$PKG_MANAGER" == "apt" ]]; then
+    # Install MongoDB on Ubuntu/Debian if not already present
+    if ! command -v mongod &>/dev/null; then
+        apt-get install -y -qq gnupg curl || true
+        curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | \
+            gpg -o /usr/share/keyrings/mongodb-server-7.0.gpg --dearmor --yes 2>/dev/null || true
+
+        UBUNTU_CODENAME=$(lsb_release -cs 2>/dev/null || echo "jammy")
+        if [[ "$UBUNTU_CODENAME" == "noble" ]]; then
+            # Use noble if repo available, or jammy fallback
+            echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+        else
+            echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu ${UBUNTU_CODENAME}/mongodb-org/7.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+        fi
+        apt-get update -qq || true
+        apt-get install -y -qq mongodb-org mongodb-mongosh || true
+    fi
+    systemctl enable --now mongod 2>/dev/null || true
+else
+    if ! command -v mongod &>/dev/null; then
+        cat > /etc/yum.repos.d/mongodb-org-7.0.repo <<'EOMONGO'
+[mongodb-org-7.0]
+name=MongoDB Repository
+baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/7.0/x86_64/
+gpgcheck=1
+enabled=1
+gpgkey=https://www.mongodb.org/static/pgp/server-7.0.asc
+EOMONGO
+        dnf install -y -q mongodb-org mongodb-mongosh || true
+    fi
+    systemctl enable --now mongod 2>/dev/null || true
+fi
+ok "MongoDB installed and running"
+
+# ============================================================
 # Step 6: Install Certbot
 # ============================================================
 info "Installing Certbot..."

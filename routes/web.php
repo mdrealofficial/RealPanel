@@ -33,6 +33,7 @@ use App\Http\Controllers\HtaccessController;
 use App\Http\Controllers\LaravelInstallerController;
 use App\Http\Controllers\NodeController;
 use App\Http\Controllers\PostgresController;
+use App\Http\Controllers\MongoController;
 use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\MonitorController;
 use App\Http\Controllers\PackageController;
@@ -306,6 +307,14 @@ Route::middleware([
         Route::get('/postgres/{postgresDatabase}', [PostgresController::class, 'show'])->name('postgres.show');
         Route::post('/postgres/{postgresDatabase}/password', [PostgresController::class, 'changePassword'])->name('postgres.password');
         Route::post('/postgres/{postgresDatabase}/delete', [PostgresController::class, 'destroy'])->name('postgres.destroy');
+
+        // MongoDB
+        Route::get('/mongodb', [MongoController::class, 'index'])->name('mongodb.index');
+        Route::get('/mongodb/create', [MongoController::class, 'create'])->name('mongodb.create');
+        Route::post('/mongodb', [MongoController::class, 'store'])->name('mongodb.store');
+        Route::get('/mongodb/{mongoDatabase}', [MongoController::class, 'show'])->name('mongodb.show');
+        Route::post('/mongodb/{mongoDatabase}/password', [MongoController::class, 'changePassword'])->name('mongodb.password');
+        Route::post('/mongodb/{mongoDatabase}/delete', [MongoController::class, 'destroy'])->name('mongodb.destroy');
 
         // Composer
         Route::get('/composer', [ComposerController::class, 'index'])->name('composer.index');

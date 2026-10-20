@@ -29,6 +29,7 @@ func ServicesListHandler(w http.ResponseWriter, r *http.Request) {
 		{Name: "apache2", DisplayName: "Apache Web Server", Aliases: []string{"apache2", "httpd"}},
 		{Name: "mariadb", DisplayName: "MariaDB Database", Aliases: []string{"mariadb", "mysql"}},
 		{Name: "postgresql", DisplayName: "PostgreSQL Database", Aliases: []string{"postgresql"}},
+		{Name: "mongod", DisplayName: "MongoDB NoSQL Database", Aliases: []string{"mongod", "mongodb"}},
 		{Name: "powerdns", DisplayName: "PowerDNS Nameserver", Aliases: []string{"pdns", "powerdns"}},
 		{Name: "postfix", DisplayName: "Postfix Mail Transfer Agent", Aliases: []string{"postfix"}},
 		{Name: "dovecot", DisplayName: "Dovecot IMAP/POP3 Server", Aliases: []string{"dovecot"}},

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"realpanel-agent-oss/auth"
 	"realpanel-agent-oss/config"
@@ -49,7 +50,7 @@ func main() {
 	mux.HandleFunc("/account/suspend", handlers.AccountSuspendHandler)
 	mux.HandleFunc("/server/pages-sync", handlers.ServerPagesSyncHandler)
 
-	// 3. Databases
+	// 3. Databases (MySQL)
 	mux.HandleFunc("/databases/create", handlers.DbCreateHandler)
 	mux.HandleFunc("/databases/delete", handlers.DbDeleteHandler)
 	mux.HandleFunc("/databases/user-create", handlers.DbUserCreateHandler)
@@ -57,6 +58,14 @@ func main() {
 	mux.HandleFunc("/databases/user-password", handlers.DbUserPasswordHandler)
 	mux.HandleFunc("/databases/info", handlers.DbInfoHandler)
 	mux.HandleFunc("/databases/repair", handlers.DbRepairHandler)
+
+	// MongoDB
+	mux.HandleFunc("/mongodb/create", handlers.MongoCreateHandler)
+	mux.HandleFunc("/mongodb/delete", handlers.MongoDeleteHandler)
+	mux.HandleFunc("/mongodb/user-create", handlers.MongoUserCreateHandler)
+	mux.HandleFunc("/mongodb/user-delete", handlers.MongoUserDeleteHandler)
+	mux.HandleFunc("/mongodb/user-password", handlers.MongoUserPasswordHandler)
+	mux.HandleFunc("/mongodb/info", handlers.MongoInfoHandler)
 
 	// 4. Email
 	mux.HandleFunc("/email/create", handlers.EmailCreateHandler)

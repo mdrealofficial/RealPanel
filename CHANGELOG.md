@@ -10,6 +10,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.49] - 2026-10-20
+
+### Added — MongoDB NoSQL Database Support
+- **Go Agent MongoDB Handlers**: Added `agent/handlers/mongodb.go` supporting `/mongodb/create`, `/mongodb/delete`, `/mongodb/user-create`, `/mongodb/user-password`, `/mongodb/user-delete`, and `/mongodb/info` using `mongosh` / `mongo` execution.
+- **Database Model & Migration**: Added `mongo_databases` table migration (`2026_05_14_000001_create_mongo_databases_table.php`) and [MongoDatabase](file:///Users/mdreal/Panel/app/Models/MongoDatabase.php) Eloquent model.
+- **User Interface & Operations**:
+  - Added **MongoDB** to user sidebar under `DATABASES`.
+  - Created full management views: list databases (`mongodb/index.blade.php`), create database (`mongodb/create.blade.php`), and manage details (`mongodb/show.blade.php`).
+  - Added connection string generators for Mongoose, Node.js, Python, PHP, and mongosh CLI.
+  - Added password change and secure database deletion.
+- **Service Monitoring & Installer**: Added `mongod` to monitored services list in `agent/handlers/services.go` and added automatic MongoDB repository setup & installation in `installer/install.sh`.
+
+---
+
 ## [2.9.48] - 2026-10-20
 
 ### Improved & Added — User Experience Streamlining & Add Domain Option

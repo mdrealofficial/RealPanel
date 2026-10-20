@@ -94,7 +94,7 @@
         $active = [
             'domain'      => request()->routeIs('user.domains.*', 'user.subdomains.*', 'user.aliases.*', 'user.redirects.*', 'user.ssl.*', 'user.dns.*'),
             'files'       => request()->routeIs('user.filemanager.*', 'user.ftp.*', 'user.ssh.*', 'user.terminal.*'),
-            'databases'   => request()->routeIs('user.databases.*', 'user.postgres.*'),
+            'databases'   => request()->routeIs('user.databases.*', 'user.postgres.*', 'user.mongodb.*'),
             'email'       => request()->routeIs('user.emails.*', 'user.forwarders.*', 'user.autoresponders.*'),
             'software'    => request()->routeIs('user.wordpress.*', 'user.laravel.*', 'user.cms.*', 'user.nodejs.*', 'user.composer.*', 'user.git.*'),
             'advanced'    => request()->routeIs('user.nginx-directives.*', 'user.php.*', 'user.cronjobs.*', 'user.logs.*', 'user.staging.*', 'user.htaccess.*'),
@@ -205,6 +205,12 @@
                         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.128 0a10.134 10.134 0 00-2.755.38 7.124 7.124 0 00-2.016-.291c-1.176.012-2.306.356-3.231.967a9.933 9.933 0 00-1.685-.218l-.032.005c-1.347.013-4.423 1.396-4.423 6.847a12.418 12.418 0 001.161 5.19l.054.12a16.46 16.46 0 00-.55 4.122c.001 2.826.752 4.21 1.684 4.51.387.124.773.186 1.158.186 1.387 0 2.629-.832 3.388-1.678.44.047.896.07 1.362.07 2.32 0 4.49-.647 6.037-1.874a6.5 6.5 0 002.127-2.706 7.3 7.3 0 001.54-2.16c.744-1.668.744-3.622.744-4.514C21.494 2.695 19.451 0 17.128 0z"/></svg>
                     </x-slot>
                     PostgreSQL
+                </x-sidebar-link>
+                <x-sidebar-link href="{{ route('user.mongodb.index') }}" :active="request()->routeIs('user.mongodb.*')">
+                    <x-slot name="icon">
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-.3 0-.6.1-.8.3L1.6 8.5c-.4.3-.6.8-.6 1.3v8.4c0 .5.2 1 .6 1.3l9.6 8.2c.4.3 1 .3 1.4 0l9.6-8.2c.4-.3.6-.8.6-1.3V9.8c0-.5-.2-1-.6-1.3L12.8.3c-.2-.2-.5-.3-.8-.3zm0 2.2l8 6.8-8 6.8-8-6.8 8-6.8zm-8 8.5l7 6v6.2l-7-6v-6.2zm16 0v6.2l-7 6v-6.2l7-6z"/></svg>
+                    </x-slot>
+                    MongoDB
                 </x-sidebar-link>
             </div>
         </div>

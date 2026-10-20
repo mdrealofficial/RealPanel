@@ -13,7 +13,7 @@ import (
 
 // VersionHandler returns version information for RealPanel agent and services
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
-	// Read panel version if available
+	panelVer := "2.9.48"
 	panelDir := "/opt/realpanel"
 	if _, err := os.Stat(panelDir); os.IsNotExist(err) {
 		panelDir = "/opt/opterius"
