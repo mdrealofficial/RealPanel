@@ -309,6 +309,8 @@ Route::middleware([
         Route::post('/postgres', [PostgresController::class, 'store'])->name('postgres.store');
         Route::get('/postgres/{postgresDatabase}', [PostgresController::class, 'show'])->name('postgres.show');
         Route::post('/postgres/{postgresDatabase}/password', [PostgresController::class, 'changePassword'])->name('postgres.password');
+        Route::get('/postgres/{postgresDatabase}/export', [PostgresController::class, 'export'])->name('postgres.export');
+        Route::post('/postgres/{postgresDatabase}/import', [PostgresController::class, 'import'])->name('postgres.import');
         Route::post('/postgres/{postgresDatabase}/delete', [PostgresController::class, 'destroy'])->name('postgres.destroy');
 
         // MongoDB
@@ -317,6 +319,8 @@ Route::middleware([
         Route::post('/mongodb', [MongoController::class, 'store'])->name('mongodb.store');
         Route::get('/mongodb/{mongoDatabase}', [MongoController::class, 'show'])->name('mongodb.show');
         Route::post('/mongodb/{mongoDatabase}/password', [MongoController::class, 'changePassword'])->name('mongodb.password');
+        Route::get('/mongodb/{mongoDatabase}/export', [MongoController::class, 'export'])->name('mongodb.export');
+        Route::post('/mongodb/{mongoDatabase}/import', [MongoController::class, 'import'])->name('mongodb.import');
         Route::post('/mongodb/{mongoDatabase}/delete', [MongoController::class, 'destroy'])->name('mongodb.destroy');
 
         // Composer
@@ -421,6 +425,9 @@ Route::middleware([
         Route::post('/databases/{database}/password', [DatabaseController::class, 'changePassword'])->name('databases.password');
         Route::post('/databases/{database}/repair', [DatabaseController::class, 'repair'])->name('databases.repair');
         Route::get('/databases/{database}/sso', [DatabaseController::class, 'sso'])->name('databases.sso');
+        Route::get('/databases/{database}/export', [DatabaseController::class, 'export'])->name('databases.export');
+        Route::post('/databases/{database}/import', [DatabaseController::class, 'import'])->name('databases.import');
+        Route::post('/databases/{database}/permissions', [DatabaseController::class, 'updatePermissions'])->name('databases.permissions');
 
         // SSL Certificates
         Route::get('/ssl', [SslController::class, 'index'])->name('ssl.index');

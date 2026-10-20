@@ -135,6 +135,13 @@
                                 </a>
                             @endif
 
+                            <a href="{{ route('user.databases.export', $database) }}"
+                               title="Export .sql.gz"
+                               class="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Export
+                            </a>
+
                             <x-delete-modal
                                 :action="route('user.databases.destroy', $database)"
                                 :title="__('databases.delete_database')"

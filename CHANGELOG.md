@@ -10,6 +10,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.51] - 2026-10-20
+
+### Added — cPanel Parity Phase 2: Database Tools (Export, Import, phpMyAdmin SSO & Permissions)
+- **Single-Click Database Export & Import (`.sql` / `.sql.gz` / `.archive.gz`)**:
+  - **MySQL**: Added instant `Export (.sql.gz)` and `Import (.sql / .sql.gz)` via Go agent `/databases/export` and `/databases/import`.
+  - **PostgreSQL**: Added instant `Export (.sql.gz)` and `Import (.sql / .sql.gz)` via Go agent `/postgres/export` and `/postgres/import`.
+  - **MongoDB**: Added instant `Export (.archive.gz)` and `Import (.archive.gz)` via Go agent `/mongodb/export` and `/mongodb/import`.
+  - Accessible directly from both list overview rows and detailed database views without requiring phpMyAdmin or CLI.
+- **Granular Database User Permissions Matrix**:
+  - Added cPanel-style user privilege management modal for MySQL database users (`SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `DROP`, `ALTER`, `INDEX`, `LOCK TABLES`, etc.) with `ALL PRIVILEGES` toggle via Go agent `/databases/user-permissions`.
+- **phpMyAdmin Single-Sign-On (SSO)**:
+  - Configured phpMyAdmin Signon server (`auth_type = 'signon'`) and installed secure HMAC sign-on bridge script `realpanel-signon.php` in `installer/install.sh`.
+  - Generates signed, short-lived single-use tickets for passwordless 1-click phpMyAdmin login.
+- **Full Agent PostgreSQL Handlers**:
+  - Implemented [agent/handlers/postgres.go](file:///Users/mdreal/Panel/agent/handlers/postgres.go) for complete native PostgreSQL database, user, password, and size stats management.
+
+---
+
 ## [2.9.50] - 2026-10-20
 
 ### Added — cPanel Parity: Email Ecosystem (Routing, Catch-All & Disk Usage Cleaner)

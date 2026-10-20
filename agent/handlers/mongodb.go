@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"realpanel-agent-oss/system"
 )
@@ -256,3 +259,74 @@ func MongoInfoHandler(w http.ResponseWriter, r *http.Request) {
 		"indexes":     stats.Indexes,
 	})
 }
+
+// MongoExportHandler dumps MongoDB collections using mongodump | gzip
+func MongoExportHandler(w http.ResponseWriter, r *http.Request) {
+	var req DbExportReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || !isSafeDbIdentifier(req.Name) {
+		system.RespondJSON(w, http.StatusBadRequest, map[string]string{"error": "Valid database name is required"})
+		return
+	}
+
+	backupDir := fmt.Sprintf("/var/realpanel/backups/%s", req.Username)
+	if req.Username != "" {
+		userHome := fmt.Sprintf("/home/%s/backups", req.Username)
+		if _, err := os.Stat(fmt.Sprintf("/home/%s", req.Username)); err == nil {
+			backupDir = userHome
+		}
+	}
+	os.MkdirAll(backupDir, 0755)
+
+	dumpFileName := fmt.Sprintf("%s_%d.archive.gz", req.Name, time.Now().Unix())
+	targetFile := filepath.Join(backupDir, dumpFileName)
+
+	dumpCmd := fmt.Sprintf("mongodump --db=%s --archive=%s --gzip", req.Name, targetFile)
+	if _, err := system.ExecCommand("bash", "-c", dumpCmd); err != nil {
+		system.RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("mongodump failed: %v", err)})
+		return
+	}
+
+	if req.Username != "" {
+		system.ExecCommand("chown", fmt.Sprintf("%s:www-data", req.Username), targetFile)
+	}
+
+	fi, _ := os.Stat(targetFile)
+	var sizeBytes int64
+	if fi != nil {
+		sizeBytes = fi.Size()
+	}
+
+	system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"status":     "ok",
+		"file_name":  dumpFileName,
+		"file_path":  targetFile,
+		"size_bytes": sizeBytes,
+		"size_mb":    fmt.Sprintf("%.2f MB", float64(sizeBytes)/(1024*1024)),
+	})
+}
+
+// MongoImportHandler restores a mongodump archive (.archive.gz or .gz)
+func MongoImportHandler(w http.ResponseWriter, r *http.Request) {
+	var req DbImportReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || !isSafeDbIdentifier(req.Name) || req.FilePath == "" {
+		system.RespondJSON(w, http.StatusBadRequest, map[string]string{"error": "Valid database name and file path are required"})
+		return
+	}
+
+	if _, err := os.Stat(req.FilePath); err != nil {
+		system.RespondJSON(w, http.StatusBadRequest, map[string]string{"error": "Dump file not found on server"})
+		return
+	}
+
+	restoreCmd := fmt.Sprintf("mongorestore --nsInclude=\"%s.*\" --archive=%s --gzip", req.Name, req.FilePath)
+	if _, err := system.ExecCommand("bash", "-c", restoreCmd); err != nil {
+		system.RespondJSON(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("mongorestore failed: %v", err)})
+		return
+	}
+
+	system.RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"status":  "ok",
+		"message": fmt.Sprintf("Successfully restored MongoDB dump into %s", req.Name),
+	})
+}
+

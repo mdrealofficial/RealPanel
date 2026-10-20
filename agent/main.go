@@ -58,6 +58,19 @@ func main() {
 	mux.HandleFunc("/databases/user-password", handlers.DbUserPasswordHandler)
 	mux.HandleFunc("/databases/info", handlers.DbInfoHandler)
 	mux.HandleFunc("/databases/repair", handlers.DbRepairHandler)
+	mux.HandleFunc("/databases/export", handlers.DbExportHandler)
+	mux.HandleFunc("/databases/import", handlers.DbImportHandler)
+	mux.HandleFunc("/databases/user-permissions", handlers.DbUserPermsHandler)
+
+	// PostgreSQL
+	mux.HandleFunc("/postgres/create", handlers.PostgresCreateHandler)
+	mux.HandleFunc("/postgres/delete", handlers.PostgresDeleteHandler)
+	mux.HandleFunc("/postgres/user-create", handlers.PostgresUserCreateHandler)
+	mux.HandleFunc("/postgres/user-delete", handlers.PostgresUserDeleteHandler)
+	mux.HandleFunc("/postgres/user-password", handlers.PostgresUserPasswordHandler)
+	mux.HandleFunc("/postgres/info", handlers.PostgresInfoHandler)
+	mux.HandleFunc("/postgres/export", handlers.PostgresExportHandler)
+	mux.HandleFunc("/postgres/import", handlers.PostgresImportHandler)
 
 	// MongoDB
 	mux.HandleFunc("/mongodb/create", handlers.MongoCreateHandler)
@@ -66,6 +79,8 @@ func main() {
 	mux.HandleFunc("/mongodb/user-delete", handlers.MongoUserDeleteHandler)
 	mux.HandleFunc("/mongodb/user-password", handlers.MongoUserPasswordHandler)
 	mux.HandleFunc("/mongodb/info", handlers.MongoInfoHandler)
+	mux.HandleFunc("/mongodb/export", handlers.MongoExportHandler)
+	mux.HandleFunc("/mongodb/import", handlers.MongoImportHandler)
 
 	// 4. Email
 	mux.HandleFunc("/email/create", handlers.EmailCreateHandler)

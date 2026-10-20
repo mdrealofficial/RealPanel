@@ -61,6 +61,12 @@
                         </div>
 
                         <div class="flex items-center gap-3">
+                            <a href="{{ route('user.mongodb.export', $db) }}"
+                               title="Export .archive.gz"
+                               class="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Export
+                            </a>
                             <a href="{{ route('user.mongodb.show', $db) }}"
                                class="text-xs font-medium text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition">
                                 Manage

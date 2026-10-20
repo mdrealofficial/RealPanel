@@ -64,6 +64,101 @@
                 {{ __('databases.optimize') }}
             </button>
         </form>
+
+        {{-- Single-Click Export (.sql.gz) --}}
+        <a href="{{ route('user.databases.export', $database) }}"
+           class="inline-flex items-center px-4 py-2.5 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Export (.sql.gz)
+        </a>
+
+        {{-- Single-Click Import (.sql / .sql.gz) Modal Trigger --}}
+        <div x-data="{ open: false }">
+            <button type="button" @click="open = true"
+                    class="inline-flex items-center px-4 py-2.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Import (.sql / .gz)
+            </button>
+
+            <!-- Import Modal -->
+            <div x-show="open" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    <div x-show="open" @click="open = false" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                    <div x-show="open" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full p-6">
+                        <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                            <h3 class="text-lg font-bold text-gray-900">Import SQL into {{ $database->name }}</h3>
+                            <button @click="open = false" class="text-gray-400 hover:text-gray-600">&times;</button>
+                        </div>
+                        <form action="{{ route('user.databases.import', $database) }}" method="POST" enctype="multipart/form-data" class="mt-4 space-y-4">
+                            @csrf
+                            <p class="text-xs text-gray-500">Upload a <code>.sql</code> or <code>.sql.gz</code> file to restore tables directly into this database.</p>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 uppercase mb-2">Select SQL Dump File (max 100MB)</label>
+                                <input type="file" name="sql_file" required accept=".sql,.gz" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-gray-300 rounded-lg p-2">
+                            </div>
+                            <div class="bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg p-3">
+                                <strong>Warning:</strong> Existing tables with matching names may be overwritten.
+                            </div>
+                            <div class="flex justify-end gap-3 pt-3">
+                                <button type="button" @click="open = false" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Cancel</button>
+                                <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition">Upload & Restore</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Granular Permissions Matrix Modal Trigger --}}
+        <div x-data="{ open: false, selectAll: false, perms: ['SELECT','INSERT','UPDATE','DELETE','CREATE','DROP','ALTER','INDEX','CREATE TEMPORARY TABLES','LOCK TABLES','EXECUTE','CREATE VIEW','SHOW VIEW','CREATE ROUTINE','ALTER ROUTINE','EVENT','TRIGGER'] }">
+            <button type="button" @click="open = true"
+                    class="inline-flex items-center px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                Manage User Privileges
+            </button>
+
+            <!-- Privileges Modal -->
+            <div x-show="open" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    <div x-show="open" @click="open = false" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                    <div x-show="open" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-xl sm:w-full p-6">
+                        <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">User Privileges</h3>
+                                <p class="text-xs text-gray-500">Configure privileges for <span class="font-mono font-semibold">{{ $database->db_username }}</span> on <span class="font-mono font-semibold">{{ $database->name }}</span></p>
+                            </div>
+                            <button @click="open = false" class="text-gray-400 hover:text-gray-600">&times;</button>
+                        </div>
+                        <form action="{{ route('user.databases.permissions', $database) }}" method="POST" class="mt-4 space-y-4">
+                            @csrf
+                            <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                                <label class="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 cursor-pointer">
+                                    <input type="checkbox" x-model="selectAll"
+                                           @change="document.querySelectorAll('.priv-cb').forEach(c => c.checked = selectAll)"
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span>ALL PRIVILEGES</span>
+                                </label>
+                                <span class="text-xs text-gray-400">cPanel-style granular control</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto py-2">
+                                <template x-for="p in perms" :key="p">
+                                    <label class="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-50 border border-gray-100 px-3 py-2 rounded-lg cursor-pointer hover:bg-gray-100">
+                                        <input type="checkbox" name="privileges[]" :value="p" checked class="priv-cb rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                        <span x-text="p"></span>
+                                    </label>
+                                </template>
+                            </div>
+                            <div class="flex justify-end gap-3 pt-3 border-t border-gray-100">
+                                <button type="button" @click="open = false" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Cancel</button>
+                                <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition">Save Privileges</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

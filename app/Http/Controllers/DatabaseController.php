@@ -266,4 +266,114 @@ class DatabaseController extends Controller
 
         return redirect()->route('user.databases.index')->with('success', __('databases.database_deleted', ['name' => $database->name]));
     }
+
+    /**
+     * Single-click database export (.sql.gz)
+     */
+    public function export(Database $database)
+    {
+        $database->load('account.server');
+
+        if (!in_array($database->account_id, auth()->user()->currentAccountIds())) {
+            abort(403);
+        }
+
+        $res = AgentService::for($database->account->server)->post('/databases/export', [
+            'name'     => $database->name,
+            'username' => $database->account->username,
+        ]);
+
+        if (!$res || !$res->successful()) {
+            $err = $res ? $res->json('error', 'Agent error') : 'Server agent unreachable';
+            return back()->with('error', 'Database export failed: ' . $err);
+        }
+
+        $filePath = $res->json('file_path');
+        $fileName = $res->json('file_name');
+
+        if ($filePath && file_exists($filePath)) {
+            ActivityLogger::log('database.export', 'database', $database->id, $database->name, "Exported database {$database->name}");
+            return response()->download($filePath, $fileName);
+        }
+
+        return back()->with('success', "Database export generated on server: {$fileName}");
+    }
+
+    /**
+     * Single-click database import (.sql / .sql.gz)
+     */
+    public function import(Request $request, Database $database)
+    {
+        $database->load('account.server');
+
+        if (!in_array($database->account_id, auth()->user()->currentAccountIds())) {
+            abort(403);
+        }
+
+        $request->validate([
+            'sql_file' => 'required|file|max:102400', // 100MB max
+        ]);
+
+        $uploadedFile = $request->file('sql_file');
+        $ext = strtolower($uploadedFile->getClientOriginalExtension());
+        $origName = $uploadedFile->getClientOriginalName();
+
+        if ($ext !== 'sql' && $ext !== 'gz') {
+            return back()->with('error', 'Invalid file type. Please upload a .sql or .sql.gz dump file.');
+        }
+
+        // Store temporarily in /tmp or user backups
+        $tempPath = '/tmp/' . uniqid('db_import_') . '_' . $origName;
+        $uploadedFile->move('/tmp', basename($tempPath));
+
+        $res = AgentService::for($database->account->server)->post('/databases/import', [
+            'name'      => $database->name,
+            'username'  => $database->account->username,
+            'file_path' => $tempPath,
+        ]);
+
+        @unlink($tempPath);
+
+        if (!$res || !$res->successful()) {
+            $err = $res ? $res->json('error', 'Agent error') : 'Server agent unreachable';
+            return back()->with('error', 'Database import failed: ' . $err);
+        }
+
+        ActivityLogger::log('database.import', 'database', $database->id, $database->name, "Imported SQL dump into database {$database->name}");
+
+        return back()->with('success', "Database \"{$database->name}\" successfully restored from {$origName}.");
+    }
+
+    /**
+     * Granular permissions update
+     */
+    public function updatePermissions(Request $request, Database $database)
+    {
+        $database->load('account.server');
+
+        if (!in_array($database->account_id, auth()->user()->currentAccountIds())) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'privileges' => 'required|array',
+            'privileges.*' => 'string',
+        ]);
+
+        $res = AgentService::for($database->account->server)->post('/databases/user-permissions', [
+            'username'   => $database->db_username,
+            'database'   => $database->name,
+            'host'       => 'localhost',
+            'privileges' => $validated['privileges'],
+        ]);
+
+        if (!$res || !$res->successful()) {
+            $err = $res ? $res->json('error', 'Agent error') : 'Server agent unreachable';
+            return back()->with('error', 'Failed to update privileges: ' . $err);
+        }
+
+        ActivityLogger::log('database.permissions', 'database', $database->id, $database->name, "Updated privileges for {$database->db_username} on {$database->name}");
+
+        return back()->with('success', "Database privileges updated successfully for {$database->db_username}.");
+    }
 }

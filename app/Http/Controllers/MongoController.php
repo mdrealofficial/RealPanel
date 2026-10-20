@@ -152,6 +152,68 @@ class MongoController extends Controller
         return redirect()->route('user.mongodb.index')->with('success', "MongoDB database \"{$mongoDatabase->name}\" deleted.");
     }
 
+    /**
+     * Export MongoDB database archive (.archive.gz)
+     */
+    public function export(MongoDatabase $mongoDatabase)
+    {
+        $this->authorizeDb($mongoDatabase);
+        $mongoDatabase->load('account.server');
+
+        $res = AgentService::for($mongoDatabase->account->server)->post('/mongodb/export', [
+            'name'     => $mongoDatabase->name,
+            'username' => $mongoDatabase->account->username,
+        ]);
+
+        if (!$res || !$res->successful()) {
+            $err = $res ? $res->json('error', 'Agent error') : 'Server agent unreachable';
+            return back()->with('error', 'MongoDB database export failed: ' . $err);
+        }
+
+        $filePath = $res->json('file_path');
+        $fileName = $res->json('file_name');
+
+        if ($filePath && file_exists($filePath)) {
+            return response()->download($filePath, $fileName);
+        }
+
+        return back()->with('success', "MongoDB archive created: {$fileName}");
+    }
+
+    /**
+     * Import MongoDB database archive (.archive.gz or .gz)
+     */
+    public function import(Request $request, MongoDatabase $mongoDatabase)
+    {
+        $this->authorizeDb($mongoDatabase);
+        $mongoDatabase->load('account.server');
+
+        $request->validate([
+            'archive_file' => 'required|file|max:102400',
+        ]);
+
+        $uploadedFile = $request->file('archive_file');
+        $origName = $uploadedFile->getClientOriginalName();
+
+        $tempPath = '/tmp/' . uniqid('mongo_import_') . '_' . $origName;
+        $uploadedFile->move('/tmp', basename($tempPath));
+
+        $res = AgentService::for($mongoDatabase->account->server)->post('/mongodb/import', [
+            'name'      => $mongoDatabase->name,
+            'username'  => $mongoDatabase->account->username,
+            'file_path' => $tempPath,
+        ]);
+
+        @unlink($tempPath);
+
+        if (!$res || !$res->successful()) {
+            $err = $res ? $res->json('error', 'Agent error') : 'Server agent unreachable';
+            return back()->with('error', 'MongoDB restore failed: ' . $err);
+        }
+
+        return back()->with('success', "MongoDB database \"{$mongoDatabase->name}\" successfully restored from {$origName}.");
+    }
+
     private function authorizeDb(MongoDatabase $db): void
     {
         abort_unless(in_array($db->account_id, auth()->user()->currentAccountIds()), 403);

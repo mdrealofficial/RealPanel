@@ -581,23 +581,92 @@ curl -sL "https://files.phpmyadmin.net/phpMyAdmin/${PMA_VERSION}/phpMyAdmin-${PM
     | tar -xz -C /var/www/
 mv /var/www/phpMyAdmin-${PMA_VERSION}-all-languages ${PMA_DIR}
 
-# Configure phpMyAdmin
+PMA_SECRET_FILE="/etc/realpanel/pma-signon-secret"
+if [ ! -f "$PMA_SECRET_FILE" ]; then
+    mkdir -p /etc/realpanel
+    openssl rand -hex 32 > "$PMA_SECRET_FILE"
+    chmod 600 "$PMA_SECRET_FILE"
+fi
+PMA_SSO_SECRET=$(cat "$PMA_SECRET_FILE" 2>/dev/null || openssl rand -hex 32)
+
+# Configure phpMyAdmin (Server 1: Cookie, Server 2: Signon SSO)
 cat > ${PMA_DIR}/config.inc.php <<EOPMA
 <?php
 \$cfg['blowfish_secret'] = '${PMA_BLOWFISH}';
+
+// Server 1: Standard interactive cookie login
 \$cfg['Servers'][1]['auth_type'] = 'cookie';
 \$cfg['Servers'][1]['host'] = 'localhost';
 \$cfg['Servers'][1]['compress'] = false;
 \$cfg['Servers'][1]['AllowNoPassword'] = false;
+
+// Server 2: RealPanel One-Click SSO Signon
+\$cfg['Servers'][2]['auth_type'] = 'signon';
+\$cfg['Servers'][2]['host'] = 'localhost';
+\$cfg['Servers'][2]['SignonSession'] = 'RealPanelSignonSession';
+\$cfg['Servers'][2]['SignonURL'] = 'realpanel-signon.php';
+\$cfg['Servers'][2]['compress'] = false;
+\$cfg['Servers'][2]['AllowNoPassword'] = false;
+
 \$cfg['UploadDir'] = '';
 \$cfg['SaveDir'] = '';
 \$cfg['TempDir'] = '${PMA_DIR}/tmp';
 \$cfg['DefaultLang'] = 'en';
 EOPMA
 
+# Install RealPanel Signon Bridge Script
+cat > ${PMA_DIR}/realpanel-signon.php <<'EOSIGNON'
+<?php
+// RealPanel phpMyAdmin Single-Sign-On Bridge
+session_name('RealPanelSignonSession');
+session_start();
+
+$secretFile = '/etc/realpanel/pma-signon-secret';
+$secret = file_exists($secretFile) ? trim(file_get_contents($secretFile)) : '';
+
+$token = $_GET['t'] ?? '';
+if (!$token || !$secret) {
+    header('Location: index.php');
+    exit;
+}
+
+$decoded = base64_decode(strtr($token, '-_', '+/'));
+$data = json_decode($decoded, true);
+
+if (!$data || empty($data['user']) || empty($data['password']) || empty($data['expires_at']) || empty($data['sig'])) {
+    header('Location: index.php?error=invalid_token');
+    exit;
+}
+
+if (time() > (int)$data['expires_at']) {
+    header('Location: index.php?error=token_expired');
+    exit;
+}
+
+$payload = $data['user'] . '|' . $data['password'] . '|' . ($data['db'] ?? '') . '|' . $data['expires_at'];
+$expectedSig = hash_hmac('sha256', $payload, $secret);
+
+if (!hash_equals($expectedSig, $data['sig'])) {
+    header('Location: index.php?error=invalid_signature');
+    exit;
+}
+
+// Valid SSO ticket: set phpMyAdmin signon session credentials
+$_SESSION['PMA_single_signon_user'] = $data['user'];
+$_SESSION['PMA_single_signon_password'] = $data['password'];
+if (!empty($data['db'])) {
+    $_SESSION['PMA_single_signon_cfgupdate'] = ['db' => $data['db']];
+}
+
+session_write_close();
+header('Location: index.php?server=2' . (!empty($data['db']) ? '&db=' . urlencode($data['db']) : ''));
+exit;
+EOSIGNON
+
 mkdir -p ${PMA_DIR}/tmp
 chown -R www-data:www-data ${PMA_DIR}
 chmod -R 755 ${PMA_DIR}
+chmod 644 ${PMA_DIR}/realpanel-signon.php
 chmod 770 ${PMA_DIR}/tmp
 
 # Determine PHP-FPM socket for phpMyAdmin

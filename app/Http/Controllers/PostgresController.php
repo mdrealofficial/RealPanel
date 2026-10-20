@@ -147,6 +147,68 @@ class PostgresController extends Controller
         return redirect()->route('user.postgres.index')->with('success', "PostgreSQL database \"{$postgresDatabase->name}\" deleted.");
     }
 
+    /**
+     * Export PostgreSQL database (.sql.gz)
+     */
+    public function export(PostgresDatabase $postgresDatabase)
+    {
+        $this->authorizeDb($postgresDatabase);
+        $postgresDatabase->load('account.server');
+
+        $res = AgentService::for($postgresDatabase->account->server)->post('/postgres/export', [
+            'name'     => $postgresDatabase->name,
+            'username' => $postgresDatabase->account->username,
+        ]);
+
+        if (!$res || !$res->successful()) {
+            $err = $res ? $res->json('error', 'Agent error') : 'Server agent unreachable';
+            return back()->with('error', 'PostgreSQL database export failed: ' . $err);
+        }
+
+        $filePath = $res->json('file_path');
+        $fileName = $res->json('file_name');
+
+        if ($filePath && file_exists($filePath)) {
+            return response()->download($filePath, $fileName);
+        }
+
+        return back()->with('success', "PostgreSQL export created: {$fileName}");
+    }
+
+    /**
+     * Import PostgreSQL database (.sql / .sql.gz)
+     */
+    public function import(Request $request, PostgresDatabase $postgresDatabase)
+    {
+        $this->authorizeDb($postgresDatabase);
+        $postgresDatabase->load('account.server');
+
+        $request->validate([
+            'sql_file' => 'required|file|max:102400',
+        ]);
+
+        $uploadedFile = $request->file('sql_file');
+        $origName = $uploadedFile->getClientOriginalName();
+
+        $tempPath = '/tmp/' . uniqid('pg_import_') . '_' . $origName;
+        $uploadedFile->move('/tmp', basename($tempPath));
+
+        $res = AgentService::for($postgresDatabase->account->server)->post('/postgres/import', [
+            'name'      => $postgresDatabase->name,
+            'username'  => $postgresDatabase->account->username,
+            'file_path' => $tempPath,
+        ]);
+
+        @unlink($tempPath);
+
+        if (!$res || !$res->successful()) {
+            $err = $res ? $res->json('error', 'Agent error') : 'Server agent unreachable';
+            return back()->with('error', 'PostgreSQL import failed: ' . $err);
+        }
+
+        return back()->with('success', "PostgreSQL database \"{$postgresDatabase->name}\" successfully restored from {$origName}.");
+    }
+
     private function authorizeDb(PostgresDatabase $db): void
     {
         abort_unless(in_array($db->account_id, auth()->user()->currentAccountIds()), 403);

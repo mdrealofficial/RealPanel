@@ -35,6 +35,49 @@
         </div>
     @endif
 
+    {{-- Quick Actions --}}
+    <div class="flex flex-wrap gap-3 mb-6">
+        <a href="{{ route('user.mongodb.export', $db) }}"
+           class="inline-flex items-center px-4 py-2.5 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Export Archive (.archive.gz)
+        </a>
+
+        <div x-data="{ open: false }">
+            <button type="button" @click="open = true"
+                    class="inline-flex items-center px-4 py-2.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                Import Archive (.archive.gz)
+            </button>
+
+            <!-- Import Modal -->
+            <div x-show="open" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    <div x-show="open" @click="open = false" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+                    <div x-show="open" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full p-6">
+                        <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                            <h3 class="text-lg font-bold text-gray-900">Import MongoDB Archive into {{ $db->name }}</h3>
+                            <button @click="open = false" class="text-gray-400 hover:text-gray-600">&times;</button>
+                        </div>
+                        <form action="{{ route('user.mongodb.import', $db) }}" method="POST" enctype="multipart/form-data" class="mt-4 space-y-4">
+                            @csrf
+                            <p class="text-xs text-gray-500">Upload a <code>.archive.gz</code> or <code>.gz</code> mongodump archive to restore into this database.</p>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 uppercase mb-2">Select Archive File (max 100MB)</label>
+                                <input type="file" name="archive_file" required accept=".gz,.archive" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-gray-300 rounded-lg p-2">
+                            </div>
+                            <div class="flex justify-end gap-3 pt-3">
+                                <button type="button" @click="open = false" class="px-4 py-2 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Cancel</button>
+                                <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition">Upload & Restore</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 
         {{-- Database info --}}
