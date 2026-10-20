@@ -121,6 +121,8 @@ func main() {
 	mux.HandleFunc("/files/rename", handlers.FileRenameHandler)
 	mux.HandleFunc("/files/chmod", handlers.FileChmodHandler)
 	mux.HandleFunc("/files/archive", handlers.FileArchiveHandler)
+	mux.HandleFunc("/files/disk-breakdown", handlers.DiskBreakdownHandler)
+	mux.HandleFunc("/files/disk-clean", handlers.DiskCleanHandler)
 
 	// 8. Firewall & Security
 	mux.HandleFunc("/security/firewall-list", handlers.FirewallListHandler)
@@ -163,6 +165,8 @@ func main() {
 	mux.HandleFunc("/backup/download", handlers.BackupDownloadHandler)
 	mux.HandleFunc("/backup/browse", handlers.BackupBrowseHandler)
 	mux.HandleFunc("/backup/restore-files", handlers.BackupRestoreFilesHandler)
+	mux.HandleFunc("/backup/cloud-test", handlers.BackupCloudTestHandler)
+	mux.HandleFunc("/backup/cloud-sync", handlers.BackupCloudSyncHandler)
 
 	// Default fallback handler for any remaining endpoints
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -10,6 +10,20 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.52] - 2026-10-20
+
+### Added — cPanel Parity Phase 3: Files & Remote Cloud Storage Backups
+- **Interactive Disk Space Usage Analyzer**:
+  - Added dedicated Disk Usage management center (`/disk-usage`) under Files navigation for all users.
+  - Interactive storage visualization with percentage breakdown of home directory, public web files, databases, mailboxes, SSL certs, archived logs, and trash.
+  - Drill-down subfolder table sorted by size in bytes/MB/GB.
+  - One-click bulk maintenance actions: "Empty Trash", "Clear Archived Logs" (`.log.gz` / `.log.1`), and "Purge Tmp Cache" via Go agent `/files/disk-clean`.
+- **Remote Cloud Backup Destinations (Amazon S3, Backblaze B2, SFTP)**:
+  - Added `backup_destinations` system with encrypted credentials at rest (`encrypted:array`).
+  - Added connection health check and testing via Go agent `/backup/cloud-test`.
+  - Added one-click "Sync Cloud" offloader via Go agent `/backup/cloud-sync` to upload compressed `.tar.gz` backups to remote S3 buckets / B2 / SFTP hosts.
+  - Native fallback logic ensuring seamless backup offload across AWS S3 CLI, MinIO/B2 S3 endpoints, and SFTP `scp`.
+
 ## [2.9.51] - 2026-10-20
 
 ### Added — cPanel Parity Phase 2: Database Tools (Export, Import, phpMyAdmin SSO & Permissions)

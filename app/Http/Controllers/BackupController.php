@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\Backup;
+use App\Models\BackupDestination;
 use App\Models\Server;
 use App\Services\ActivityLogger;
 use App\Services\AgentService;
@@ -47,11 +48,14 @@ class BackupController extends Controller
                         ]);
                     }
                 }
-                $backups = Backup::where('server_id', $selectedServer->id)->latest()->get();
             }
         }
 
-        return view('backups.index', compact('servers', 'selectedServer', 'backups', 'accounts'));
+        $destinations = $selectedServer
+            ? BackupDestination::where('server_id', $selectedServer->id)->latest()->get()
+            : collect();
+
+        return view('backups.index', compact('servers', 'selectedServer', 'backups', 'accounts', 'destinations'));
     }
 
     public function create(Request $request)
@@ -231,5 +235,111 @@ class BackupController extends Controller
         }
 
         return back()->with('success', $msg);
+    }
+
+    /**
+     * Store new remote cloud backup destination (S3, B2, SFTP, GDrive)
+     */
+    public function storeDestination(Request $request)
+    {
+        $validated = $request->validate([
+            'server_id'       => 'required|exists:servers,id',
+            'name'            => 'required|string|max:100',
+            'type'            => 'required|in:s3,b2,sftp,gdrive',
+            'bucket'          => 'nullable|string|max:150',
+            'remote_path'     => 'nullable|string|max:255',
+            'retention_count' => 'required|integer|min:1|max:90',
+            'credentials'     => 'required|array',
+        ]);
+
+        $server = Server::findOrFail($validated['server_id']);
+
+        // Test with agent first
+        $res = AgentService::for($server)->post('/backup/cloud-test', [
+            'type'        => $validated['type'],
+            'credentials' => $validated['credentials'],
+        ]);
+
+        if (!$res || !$res->successful()) {
+            $err = $res ? $res->json('error', 'Agent error') : 'Server agent unreachable';
+            return back()->with('error', 'Destination validation failed: ' . $err);
+        }
+
+        BackupDestination::create([
+            'server_id'             => $server->id,
+            'name'                  => $validated['name'],
+            'type'                  => $validated['type'],
+            'credentials_encrypted' => $validated['credentials'],
+            'bucket'                => $validated['bucket'],
+            'remote_path'           => $validated['remote_path'],
+            'retention_count'       => $validated['retention_count'],
+            'status'                => 'active',
+            'last_tested_at'        => now(),
+        ]);
+
+        return back()->with('success', "Cloud backup destination \"{$validated['name']}\" saved and verified.");
+    }
+
+    /**
+     * Test an existing cloud backup destination
+     */
+    public function testDestination(BackupDestination $destination)
+    {
+        $destination->load('server');
+
+        $res = AgentService::for($destination->server)->post('/backup/cloud-test', [
+            'type'        => $destination->type,
+            'credentials' => $destination->credentials_encrypted ?? [],
+        ]);
+
+        if (!$res || !$res->successful()) {
+            $err = $res ? $res->json('error', 'Connection test failed') : 'Agent unreachable';
+            $destination->update(['status' => 'error']);
+            return back()->with('error', "Destination \"{$destination->name}\" connection test failed: {$err}");
+        }
+
+        $destination->update(['status' => 'active', 'last_tested_at' => now()]);
+        return back()->with('success', "Connection to \"{$destination->name}\" tested successfully.");
+    }
+
+    /**
+     * Delete a cloud backup destination
+     */
+    public function destroyDestination(BackupDestination $destination)
+    {
+        $destination->delete();
+        return back()->with('success', 'Backup destination removed.');
+    }
+
+    /**
+     * Sync local backup archive to remote cloud destination
+     */
+    public function syncCloud(Request $request, Backup $backup)
+    {
+        $validated = $request->validate([
+            'destination_id' => 'required|exists:backup_destinations,id',
+        ]);
+
+        $destination = BackupDestination::with('server')->findOrFail($validated['destination_id']);
+        $backup->load('server');
+
+        $res = AgentService::for($backup->server)->post('/backup/cloud-sync', [
+            'filename'    => $backup->filename,
+            'type'        => $destination->type,
+            'bucket'      => $destination->bucket,
+            'remote_path' => $destination->remote_path,
+            'credentials' => $destination->credentials_encrypted ?? [],
+            'retention'   => $destination->retention_count,
+        ]);
+
+        if (!$res || !$res->successful()) {
+            $err = $res ? $res->json('error', 'Sync failed') : 'Agent unreachable';
+            return back()->with('error', 'Cloud sync failed: ' . $err);
+        }
+
+        $destination->update(['last_sync_at' => now()]);
+        ActivityLogger::log('backup.cloud_sync', 'backup', $backup->id, $backup->filename, "Synced backup {$backup->filename} to {$destination->name}");
+
+        return back()->with('success', "Backup \"{$backup->filename}\" successfully offloaded to {$destination->name}.");
     }
 }

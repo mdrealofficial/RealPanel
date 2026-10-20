@@ -128,6 +128,29 @@
                                     </button>
                                 </form>
 
+                                @if($destinations->count() > 0)
+                                    <div x-data="{ open: false }" class="relative">
+                                        <button type="button" @click="open = !open" title="Offload to Cloud"
+                                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-sky-600 bg-sky-50 rounded-lg hover:bg-sky-100 transition">
+                                            <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                                            Sync Cloud
+                                        </button>
+                                        <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 p-2 z-30">
+                                            <div class="text-xs font-bold text-gray-700 px-2 py-1 border-b border-gray-100">Select Destination</div>
+                                            @foreach($destinations as $dest)
+                                                <form action="{{ route('admin.backups.sync-cloud', $backup) }}" method="POST" class="mt-1">
+                                                    @csrf
+                                                    <input type="hidden" name="destination_id" value="{{ $dest->id }}">
+                                                    <button type="submit" class="w-full text-left px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 rounded flex items-center justify-between">
+                                                        <span>{{ $dest->name }}</span>
+                                                        <span class="text-xs font-mono uppercase text-gray-400">{{ $dest->type }}</span>
+                                                    </button>
+                                                </form>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <form action="{{ route('admin.backups.destroy', $backup) }}" method="POST"
                                       onsubmit="return confirm('{{ __('backups.delete_backup_confirm') }}')">
                                     @csrf
@@ -141,6 +164,189 @@
                     @endforeach
                 </div>
             @endif
+        </div>
+
+        {{-- Remote Cloud Backup Destinations --}}
+        <div class="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6"
+             x-data="{ showAddModal: false, destType: 's3', testLoading: false, testResult: null }">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                        Remote Cloud Backup Destinations (S3 / B2 / SFTP)
+                    </h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Offload and sync compressed server backups to offsite cloud storage providers for disaster recovery.</p>
+                </div>
+                <button type="button" @click="showAddModal = true"
+                        class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition shadow-sm">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Add Cloud Destination
+                </button>
+            </div>
+
+            @if($destinations->isEmpty())
+                <div class="text-center py-8 text-gray-500 dark:text-gray-400 text-sm border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+                    <svg class="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                    No remote cloud backup destinations configured yet.
+                </div>
+            @else
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach($destinations as $dest)
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-700/30 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wider
+                                        {{ $dest->type === 's3' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400' :
+                                           ($dest->type === 'b2' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400') }}">
+                                        {{ $dest->type }}
+                                    </span>
+                                    <form action="{{ route('admin.backups.destinations.destroy', $dest) }}" method="POST"
+                                          onsubmit="return confirm('Delete this cloud backup destination?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="text-gray-400 hover:text-red-500 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                                <h4 class="font-semibold text-gray-900 dark:text-white text-sm">{{ $dest->name }}</h4>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono">
+                                    @if(in_array($dest->type, ['s3', 'b2']))
+                                        Bucket: {{ $dest->credentials['bucket'] ?? 'N/A' }}
+                                        @if(!empty($dest->credentials['path']))
+                                            / {{ $dest->credentials['path'] }}
+                                        @endif
+                                    @elseif($dest->type === 'sftp')
+                                        Host: {{ $dest->credentials['host'] ?? 'N/A' }}:{{ $dest->credentials['port'] ?? 22 }}
+                                    @endif
+                                </p>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600/50 flex items-center justify-between">
+                                <span class="text-[11px] text-gray-400">Added {{ $dest->created_at->diffForHumans() }}</span>
+                                <form action="{{ route('admin.backups.destinations.test', $dest) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center px-2 py-1 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded transition">
+                                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        Test Connection
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            {{-- Modal Add Destination --}}
+            <div x-show="showAddModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <div @click.away="showAddModal = false" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 max-w-lg w-full p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Configure Cloud Destination</h3>
+                        <button type="button" @click="showAddModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
+                    </div>
+
+                    <form action="{{ route('admin.backups.destinations.store') }}" method="POST" class="space-y-4">
+                        @csrf
+                        <input type="hidden" name="server_id" value="{{ $selectedServer->id }}">
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Destination Name</label>
+                            <input type="text" name="name" required placeholder="e.g. Production AWS S3 Backup"
+                                   class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Provider Type</label>
+                            <select name="type" x-model="destType" class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                <option value="s3">Amazon S3 / S3-Compatible (MinIO, Wasabi, DigitalOcean Spaces)</option>
+                                <option value="b2">Backblaze B2 (S3 Endpoint)</option>
+                                <option value="sftp">Remote SFTP Server</option>
+                            </select>
+                        </div>
+
+                        {{-- S3 / B2 Inputs --}}
+                        <div x-show="destType === 's3' || destType === 'b2'" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Endpoint (Optional for AWS, Required for MinIO/Wasabi/B2)</label>
+                                <input type="text" name="endpoint" placeholder="e.g. s3.us-west-004.backblazeb2.com"
+                                       class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Bucket Name</label>
+                                    <input type="text" name="bucket" placeholder="my-backups"
+                                           class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Region</label>
+                                    <input type="text" name="region" placeholder="us-east-1"
+                                           class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Access Key ID</label>
+                                    <input type="text" name="access_key" placeholder="AKIA..."
+                                           class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Secret Access Key</label>
+                                    <input type="password" name="secret_key" placeholder="••••••••"
+                                           class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Destination Subdirectory Path (Optional)</label>
+                                <input type="text" name="path" placeholder="e.g. servers/web01"
+                                       class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                            </div>
+                        </div>
+
+                        {{-- SFTP Inputs --}}
+                        <div x-show="destType === 'sftp'" class="space-y-3" x-cloak>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div class="col-span-2">
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Host / IP</label>
+                                    <input type="text" name="host" placeholder="backup.myserver.com"
+                                           class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Port</label>
+                                    <input type="number" name="port" value="22"
+                                           class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                                    <input type="text" name="username" placeholder="backupuser"
+                                           class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+                                    <input type="password" name="password" placeholder="••••••••"
+                                           class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Remote Directory Path</label>
+                                <input type="text" name="path" placeholder="/home/backupuser/backups"
+                                       class="w-full text-xs rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-700">
+                            <button type="button" @click="showAddModal = false"
+                                    class="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                    class="px-4 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition shadow-sm">
+                                Save Destination
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     @endif
 </x-admin-layout>

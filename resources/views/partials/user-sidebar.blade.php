@@ -93,7 +93,7 @@
         // Pre-compute which groups should auto-open based on the current route.
         $active = [
             'domain'      => request()->routeIs('user.domains.*', 'user.subdomains.*', 'user.aliases.*', 'user.redirects.*', 'user.ssl.*', 'user.dns.*'),
-            'files'       => request()->routeIs('user.filemanager.*', 'user.ftp.*', 'user.ssh.*', 'user.terminal.*'),
+            'files'       => request()->routeIs('user.filemanager.*', 'user.ftp.*', 'user.ssh.*', 'user.terminal.*', 'user.disk-usage.*'),
             'databases'   => request()->routeIs('user.databases.*', 'user.postgres.*', 'user.mongodb.*'),
             'email'       => request()->routeIs('user.emails.*', 'user.forwarders.*', 'user.autoresponders.*'),
             'software'    => request()->routeIs('user.wordpress.*', 'user.laravel.*', 'user.cms.*', 'user.nodejs.*', 'user.composer.*', 'user.git.*'),
@@ -183,6 +183,12 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                     </x-slot>
                     {{ __('common.web_terminal') }}
+                </x-sidebar-link>
+                <x-sidebar-link href="{{ route('user.disk-usage.index') }}" :active="request()->routeIs('user.disk-usage.*')">
+                    <x-slot name="icon">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" /></svg>
+                    </x-slot>
+                    Disk Usage
                 </x-sidebar-link>
             </div>
         </div>

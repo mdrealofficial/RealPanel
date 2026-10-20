@@ -156,7 +156,13 @@ Route::middleware([
         Route::get('/backups/{backup}/browse', [BackupController::class, 'browse'])->name('backups.browse');
         Route::post('/backups/{backup}/restore-files', [BackupController::class, 'restoreFiles'])->name('backups.restore-files');
         Route::get('/backups/{backup}/download', [BackupController::class, 'download'])->name('backups.download');
+        Route::post('/backups/{backup}/sync-cloud', [BackupController::class, 'syncCloud'])->name('backups.sync-cloud');
         Route::delete('/backups/{backup}', [BackupController::class, 'destroy'])->name('backups.destroy');
+
+        // Backup Destinations (Remote Cloud Backups)
+        Route::post('/backups/destinations', [BackupController::class, 'storeDestination'])->name('backups.destinations.store');
+        Route::post('/backups/destinations/{destination}/test', [BackupController::class, 'testDestination'])->name('backups.destinations.test');
+        Route::delete('/backups/destinations/{destination}', [BackupController::class, 'destroyDestination'])->name('backups.destinations.destroy');
 
         // Services
         Route::get('/services', [ServiceController::class, 'index'])->name('services.index');
@@ -283,6 +289,10 @@ Route::middleware([
         Route::get('/ftp', [FtpController::class, 'index'])->name('ftp.index');
         Route::post('/ftp', [FtpController::class, 'store'])->name('ftp.store');
         Route::post('/ftp/delete', [FtpController::class, 'destroy'])->name('ftp.destroy');
+
+        // Disk Usage Analyzer
+        Route::get('/disk-usage', [DiskUsageController::class, 'index'])->name('disk-usage.index');
+        Route::post('/disk-usage/clean', [DiskUsageController::class, 'clean'])->name('disk-usage.clean');
 
         // Laravel
         Route::get('/laravel', [LaravelInstallerController::class, 'index'])->name('laravel.index');
