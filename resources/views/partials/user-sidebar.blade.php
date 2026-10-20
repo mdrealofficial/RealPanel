@@ -234,6 +234,24 @@
                     </x-slot>
                     {{ __('common.forwarders') }}
                 </x-sidebar-link>
+                <x-sidebar-link href="{{ route('user.emails.routing.index') }}" :active="request()->routeIs('user.emails.routing.*')">
+                    <x-slot name="icon">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                    </x-slot>
+                    Email Routing
+                </x-sidebar-link>
+                <x-sidebar-link href="{{ route('user.emails.catchall.index') }}" :active="request()->routeIs('user.emails.catchall.*')">
+                    <x-slot name="icon">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" /></svg>
+                    </x-slot>
+                    Default Address
+                </x-sidebar-link>
+                <x-sidebar-link href="{{ route('user.emails.disk-usage.index') }}" :active="request()->routeIs('user.emails.disk-usage.*')">
+                    <x-slot name="icon">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                    </x-slot>
+                    Email Disk Usage
+                </x-sidebar-link>
                 <x-sidebar-link href="{{ route('user.autoresponders.index') }}" :active="request()->routeIs('user.autoresponders.*')">
                     <x-slot name="icon">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>

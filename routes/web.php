@@ -23,6 +23,9 @@ use App\Http\Controllers\DnsController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\EmailController;
 use App\Http\Controllers\EmailSettingsController;
+use App\Http\Controllers\EmailRoutingController;
+use App\Http\Controllers\CatchallEmailController;
+use App\Http\Controllers\EmailDiskUsageController;
 use App\Http\Controllers\FileManagerController;
 use App\Http\Controllers\ForwarderController;
 use App\Http\Controllers\FtpController;
@@ -438,6 +441,18 @@ Route::middleware([
         Route::post('/emails/{emailAccount}/quota', [EmailController::class, 'updateQuota'])->name('emails.quota');
         Route::post('/emails/{emailAccount}/restrictions', [EmailController::class, 'updateRestrictions'])->name('emails.restrictions');
         Route::delete('/emails/{emailAccount}', [EmailController::class, 'destroy'])->name('emails.destroy');
+
+        // Email Routing & MX Controls (Remote vs Local Exchanger)
+        Route::get('/email-routing', [EmailRoutingController::class, 'index'])->name('emails.routing.index');
+        Route::post('/email-routing/{domain}', [EmailRoutingController::class, 'update'])->name('emails.routing.update');
+
+        // Default Address / Catch-All
+        Route::get('/email-catchall', [CatchallEmailController::class, 'index'])->name('emails.catchall.index');
+        Route::post('/email-catchall/{domain}', [CatchallEmailController::class, 'update'])->name('emails.catchall.update');
+
+        // Email Disk Usage & Cleaner
+        Route::get('/email-disk-usage', [EmailDiskUsageController::class, 'index'])->name('emails.disk-usage.index');
+        Route::post('/email-disk-usage/clean', [EmailDiskUsageController::class, 'clean'])->name('emails.disk-usage.clean');
 
         // SSH Access
         Route::get('/ssh', [SshController::class, 'index'])->name('ssh.index');

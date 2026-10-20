@@ -73,6 +73,14 @@ func main() {
 	mux.HandleFunc("/email/delete", handlers.EmailDeleteHandler)
 	mux.HandleFunc("/email/dkim-generate", handlers.EmailDkimGenerateHandler)
 	mux.HandleFunc("/email/dkim-get", handlers.EmailDkimGetHandler)
+	mux.HandleFunc("/email/routing-set", handlers.EmailRoutingSetHandler)
+	mux.HandleFunc("/email/catchall-set", handlers.EmailCatchallSetHandler)
+	mux.HandleFunc("/email/disk-usage", handlers.EmailDiskUsageHandler)
+	mux.HandleFunc("/email/clean-messages", handlers.EmailCleanMessagesHandler)
+	mux.HandleFunc("/email/spam-config", handlers.EmailSpamConfigHandler)
+	mux.HandleFunc("/forwarder/list", handlers.ForwarderListHandler)
+	mux.HandleFunc("/forwarder/create", handlers.ForwarderCreateHandler)
+	mux.HandleFunc("/forwarder/delete", handlers.ForwarderDeleteHandler)
 
 	// 5. SSL & Certificates
 	mux.HandleFunc("/ssl/status", handlers.SslStatusHandler)

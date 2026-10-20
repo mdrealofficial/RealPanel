@@ -10,6 +10,25 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.50] - 2026-10-20
+
+### Added — cPanel Parity: Email Ecosystem (Routing, Catch-All & Disk Usage Cleaner)
+- **Email Routing & MX Controls (Local vs Remote Mail Exchanger)**:
+  - Added [EmailRoutingController.php](file:///Users/mdreal/Panel/app/Http/Controllers/EmailRoutingController.php) and interactive view [routing.blade.php](file:///Users/mdreal/Panel/resources/views/emails/routing.blade.php).
+  - Automatically queries external DNS MX records to detect whether mail is handled locally or remotely (Google Workspace, Microsoft 365, Zoho).
+  - Added Go agent endpoint `/email/routing-set` to manage `/etc/postfix/vdomains`, run `postmap`, and reload Postfix so remote setups deliver outbound directly instead of failing locally.
+- **Default / Catch-All Email Address**:
+  - Added [CatchallEmailController.php](file:///Users/mdreal/Panel/app/Http/Controllers/CatchallEmailController.php) and view [catchall.blade.php](file:///Users/mdreal/Panel/resources/views/emails/catchall.blade.php).
+  - Configures `@domain` wildcard alias in `/etc/postfix/virtual_aliases` via Go agent endpoint `/email/catchall-set` to forward unmatched emails, bounce with custom failure message, or `:discard:`.
+- **Email Disk Usage & Cleaner**:
+  - Added [EmailDiskUsageController.php](file:///Users/mdreal/Panel/app/Http/Controllers/EmailDiskUsageController.php) and view [disk_usage.blade.php](file:///Users/mdreal/Panel/resources/views/emails/disk_usage.blade.php).
+  - Added Go agent endpoint `/email/disk-usage` to inspect mailbox maildirs (`INBOX`, `Sent`, `Trash`, `Junk`, `Drafts`, `Archive`) with live MB calculations.
+  - Added Go agent endpoint `/email/clean-messages` executing safe `doveadm expunge` by age threshold (`all`, `30d`, `60d`, `1y`) or message size without corrupting Dovecot index files.
+- **Navigation**:
+  - Added **Email Routing**, **Default Address**, and **Email Disk Usage** to user sidebar under `EMAIL`.
+
+---
+
 ## [2.9.49] - 2026-10-20
 
 ### Added — MongoDB NoSQL Database Support

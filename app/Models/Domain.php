@@ -11,11 +11,15 @@ class Domain extends Model
 {
     protected $fillable = [
         'server_id', 'account_id', 'parent_id', 'staging_source_id', 'domain', 'document_root', 'php_version', 'htaccess_enabled', 'status', 'catchall_subdomains', 'catchall_document_root',
+        'mail_routing', 'catchall_action', 'catchall_destination', 'spam_score_threshold', 'spam_box_enabled', 'spam_autodelete_score',
     ];
 
     protected $casts = [
         'htaccess_enabled'     => 'boolean',
         'catchall_subdomains'  => 'boolean',
+        'spam_box_enabled'     => 'boolean',
+        'spam_score_threshold' => 'float',
+        'spam_autodelete_score'=> 'float',
     ];
 
     public function server(): BelongsTo
