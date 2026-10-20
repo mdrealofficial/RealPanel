@@ -130,6 +130,10 @@ func main() {
 	mux.HandleFunc("/security/firewall-remove", handlers.FirewallRemoveHandler)
 	mux.HandleFunc("/security/fail2ban-list", handlers.Fail2banListHandler)
 	mux.HandleFunc("/security/fail2ban-unban", handlers.Fail2banUnbanHandler)
+	mux.HandleFunc("/security/ip-block-sync", handlers.IpBlockSyncHandler)
+	mux.HandleFunc("/security/modsec/status", handlers.ModSecStatusHandler)
+	mux.HandleFunc("/security/modsec/toggle", handlers.ModSecToggleHandler)
+	mux.HandleFunc("/security/modsec/whitelist", handlers.ModSecWhitelistHandler)
 
 	// 9. Cron
 	mux.HandleFunc("/cron/create", handlers.CronCreateHandler)

@@ -82,6 +82,11 @@ class Domain extends Model
         return $this->hasOne(CdnZone::class);
     }
 
+    public function ipBlocks(): HasMany
+    {
+        return $this->hasMany(IpBlock::class);
+    }
+
     /**
      * If this domain is a staging clone, returns the source production domain.
      */

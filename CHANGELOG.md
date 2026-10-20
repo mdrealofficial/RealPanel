@@ -10,6 +10,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.53] - 2026-10-20
+
+### Added — cPanel Parity Phase 4: Advanced Security (IP Blocker & ModSecurity WAF)
+- **IP Blocker (IP Deny Manager)**:
+  - Added cPanel-style IP Blocker center (`/security/ip-blocker`) under Security navigation.
+  - Allows customers and administrators to deny single IPv4 addresses or whole CIDR subnet blocks (e.g. `198.51.100.0/24`) with optional reason/comment.
+  - Go agent handler `POST /security/ip-block-sync` automatically creates and synchronizes `/etc/nginx/realpanel_includes/{domain}_blocked_ips.conf` with instant Nginx syntax validation and zero-downtime reload.
+- **ModSecurity Web Application Firewall (WAF) Management**:
+  - Added dedicated ModSecurity manager (`/security/modsecurity`) for user domains.
+  - One-click toggle to enable or disable ModSecurity engine (`SecRuleEngine On / Off`) per domain via Go agent `/security/modsec/toggle`.
+  - Granular Rule Whitelisting (`SecRuleRemoveById {rule_id}`) to bypass false-positive triggers (e.g., WordPress Gutenberg block editor, file uploaders, long payload submissions) without leaving the entire site unprotected.
+  - Built-in OWASP Core Rule Set reference guide for common attack signatures (SQLi, XSS, LFI, RCE).
+
 ## [2.9.52] - 2026-10-20
 
 ### Added — cPanel Parity Phase 3: Files & Remote Cloud Storage Backups

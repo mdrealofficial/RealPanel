@@ -359,6 +359,16 @@ Route::middleware([
         Route::get('/security/hotlink-protection',          [\App\Http\Controllers\User\HotlinkProtectionController::class, 'index'])->name('security.hotlink.index');
         Route::patch('/security/hotlink-protection/{domain}', [\App\Http\Controllers\User\HotlinkProtectionController::class, 'update'])->name('security.hotlink.update');
 
+        // IP Blocker (IP Deny Manager)
+        Route::get('/security/ip-blocker',                [\App\Http\Controllers\User\IpBlockerController::class, 'index'])->name('security.ip-blocker.index');
+        Route::post('/security/ip-blocker',               [\App\Http\Controllers\User\IpBlockerController::class, 'store'])->name('security.ip-blocker.store');
+        Route::delete('/security/ip-blocker/{ipBlock}',   [\App\Http\Controllers\User\IpBlockerController::class, 'destroy'])->name('security.ip-blocker.destroy');
+
+        // ModSecurity WAF Management
+        Route::get('/security/modsecurity',                     [\App\Http\Controllers\User\ModSecurityController::class, 'index'])->name('security.modsecurity.index');
+        Route::post('/security/modsecurity/{domain}/toggle',    [\App\Http\Controllers\User\ModSecurityController::class, 'toggle'])->name('security.modsecurity.toggle');
+        Route::post('/security/modsecurity/{domain}/whitelist', [\App\Http\Controllers\User\ModSecurityController::class, 'whitelistRule'])->name('security.modsecurity.whitelist');
+
         // Real-time log viewer
         Route::get('/logs',       [\App\Http\Controllers\User\LogViewerController::class, 'index'])->name('logs.index');
         Route::post('/logs/tail', [\App\Http\Controllers\User\LogViewerController::class, 'tail'])->name('logs.tail');
