@@ -205,6 +205,21 @@
                         <p class="pt-2 font-medium text-gray-600">Remote</p>
                         <p class="font-mono break-all">{{ $status['remote_url'] ?: '(none)' }}</p>
                     </div>
+
+                    {{-- Auto-Deployment Hook Info --}}
+                    <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-4 text-xs text-indigo-900 space-y-2">
+                        <div class="flex items-center gap-1.5 font-semibold text-indigo-700">
+                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            <span>Auto-Deployment Hook</span>
+                        </div>
+                        <p class="text-indigo-800 leading-relaxed">
+                            Create a <code class="bg-white/80 border border-indigo-200 px-1 py-0.5 rounded font-mono text-[11px]">.realpanel.yml</code> or <code class="bg-white/80 border border-indigo-200 px-1 py-0.5 rounded font-mono text-[11px]">.cpanel.yml</code> in your repository root with a <code class="font-mono">tasks:</code> list. RealPanel runs them automatically on pull/clone!
+                        </p>
+                        <pre class="bg-indigo-900 text-indigo-100 p-2.5 rounded-lg font-mono text-[11px] overflow-x-auto leading-tight">deployment:
+  tasks:
+    - /bin/cp -R * public_html/
+    - composer install --no-dev</pre>
+                    </div>
                 </div>
             </div>
         @endif

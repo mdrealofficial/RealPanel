@@ -10,6 +10,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/) and
 
 Each release ships panel and agent together under the same version number.
 
+## [2.9.54] - 2026-10-20
+
+### Added — cPanel Parity Phase 5: Git Version Control & Post-Deploy Automation
+- **Native Go Agent Git Handlers**:
+  - Implemented `/git/status`, `/git/clone`, `/git/pull`, and `/git/log` in the native Go agent (`agent/handlers/git.go`).
+  - Added support for personal access tokens for cloning/pulling from private GitHub/GitLab/Bitbucket repositories.
+- **cPanel-Compatible Auto-Deployment (`.realpanel.yml` / `.cpanel.yml`)**:
+  - Automatically parses `deployment.tasks` on clone or pull.
+  - Safely executes defined deployment tasks (e.g. copying files to `public_html`, running `composer install`, running `php artisan migrate`) under the unprivileged user account and captures the full task execution logs into the UI.
+
 ## [2.9.53] - 2026-10-20
 
 ### Added — cPanel Parity Phase 4: Advanced Security (IP Blocker & ModSecurity WAF)

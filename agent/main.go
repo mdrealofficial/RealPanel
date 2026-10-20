@@ -161,6 +161,12 @@ func main() {
 	mux.HandleFunc("/services/list", handlers.ServicesListHandler)
 	mux.HandleFunc("/services/action", handlers.ServiceActionHandler)
 
+	// Git & Auto-Deployment
+	mux.HandleFunc("/git/status", handlers.GitStatusHandler)
+	mux.HandleFunc("/git/clone", handlers.GitCloneHandler)
+	mux.HandleFunc("/git/pull", handlers.GitPullHandler)
+	mux.HandleFunc("/git/log", handlers.GitLogHandler)
+
 	// 12. Backups
 	mux.HandleFunc("/backup/create", handlers.BackupCreateHandler)
 	mux.HandleFunc("/backup/list", handlers.BackupListHandler)
